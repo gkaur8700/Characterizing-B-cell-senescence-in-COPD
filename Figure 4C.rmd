@@ -1,0 +1,83 @@
+---
+title: "Figure 4C"
+author: "GK"
+date: "2026-02-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r libraries}
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(enrichplot)
+library(dplyr)
+```
+
+## Read the up and downregulated gene list
+
+```{r Read}
+up_genes <- read.csv("/Users/gagandeepkaur/Desktop/Figure 4C/Raw Input/upregulated_genes_Bcells_copd_vs_ns_Sen.csv")
+
+down_genes <- read.csv ("/Users/gagandeepkaur/Desktop/Figure 4C/Raw Input/downregulated_genes_Bcells_copd_vs_ns_Sen.csv")
+```
+
+#get entrez id of up/downregulated genes
+```{r ENTREZ}
+gene_up <- bitr(up_genes$gene,
+                fromType = "SYMBOL",
+                toType = "ENTREZID",
+                OrgDb = org.Hs.eg.db)
+
+gene_up
+
+gene_down <- bitr(down_genes$gene,
+                fromType = "SYMBOL",
+                toType = "ENTREZID",
+                OrgDb = org.Hs.eg.db)
+
+gene_down
+
+```
+#KEGG analyses
+
+```{r KEGG}
+#KEGG analyses
+ekegg_down <- enrichKEGG(
+  gene         = gene_down$ENTREZID,
+  organism     = "hsa",
+  pvalueCutoff = 0.05
+)
+
+dotplot(ekegg_down, showCategory = 15)
+
+ekegg_down <- as.data.frame(ekegg_down)
+
+head(ekegg_down)
+
+
+ekegg_up <- enrichKEGG(
+  gene         = gene_up$ENTREZID,
+  organism     = "hsa",
+  pvalueCutoff = 0.05
+)
+
+dotplot(ekegg_up, showCategory = 15)
+
+ekegg_up <- as.data.frame(ekegg_up)
+
+head(ekegg_up)
+
+write.csv(ekegg_up, "/Users/gagandeepkaur/Desktop/Figure 4C/KEGG_enrichment_results_Sen_Bcells_up.csv", row.names = FALSE)
+
+write.csv(ekegg_down, "/Users/gagandeepkaur/Desktop/Figure 4C/KEGG_enrichment_results_Sen_Bcells_down.csv", row.names = FALSE)
+
+```
