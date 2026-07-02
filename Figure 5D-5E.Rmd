@@ -1,0 +1,132 @@
+---
+title: "Figure 5D"
+author: "GK"
+date: "2026-02-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r B cell senescence}
+library(Seurat)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+
+#read the rds
+data <- readRDS("/Users/gagandeepkaur/Desktop/Figure 5/Figure 5B/Raw Data/All_merged_after_integration_annotated_20260225.rds")
+
+#subset the spatial seurat object to only identify the B cell population
+
+bcell_obj <- subset(data, idents = "B cells")
+
+```
+
+## B cell senescence score
+
+```{r BSM}
+#get the B cell associated senescence geneset from scRNA seq analyses as identified in Figure 4B
+
+sen_gene <- read.csv("/Users/gagandeepkaur/Desktop/Figure 5/Figure 5D-E/Data input/Sig_Bcell_ senescence_genes.csv") # this geneset has all the genes included after the gsea analyses and were linked to B cell senescence
+
+sc_sig <- sen_gene$Genes
+
+#score the signature in Visium
+
+bcell_obj <- AddModuleScore(bcell_obj, features = list(sc_sig), name = "Sen_signature")
+
+#get a mean and median score for the senescnece signature across all the samples
+df <- as.data.frame(
+  bcell_obj@meta.data[, c("sample", "Sen_signature1")]
+)
+
+sample_summary <- df %>%
+  group_by(sample) %>%
+  summarise(
+    mean_score = mean(Sen_signature1, na.rm = TRUE),
+    median_score = median(Sen_signature1, na.rm = TRUE)
+  )
+
+sample_summary
+
+write.csv(sample_summary, "/Users/gagandeepkaur/Desktop/Figure 5/Figure 5C/Sen_Score_Bcell.csv")
+
+```
+
+#Enbed spatial plots
+
+```{r plots, echo=TRUE}
+
+#lets plot the unique plots for with senescnece score
+
+#Plot the spatial plots
+all_scores <- bcell_obj$Sen_signature1
+
+# 5th and 95th percentile for contrast
+min_cut <- quantile(all_scores, 0.05, na.rm = TRUE)
+max_cut <- quantile(all_scores, 0.95, na.rm = TRUE)
+
+# Optional: define threshold to gray out low spots (e.g., bottom 50%)
+threshold <- quantile(all_scores, 0.5, na.rm = TRUE)
+
+# ----------------------------
+# Step 2: Create highlight column
+# ----------------------------
+bcell_obj$Sen_highlight <- ifelse(
+  bcell_obj$Sen_signature1 >= threshold,
+  bcell_obj$Sen_signature1,
+  NA
+)
+
+# ----------------------------
+# Step 3: Loop over samples and generate plots
+# ----------------------------
+plots <- lapply(unique(bcell_obj$sample), function(s) {
+  
+  bcell_sample <- subset(bcell_obj, subset = sample == s)
+  
+  SpatialFeaturePlot(
+    bcell_sample,
+    features = "Sen_highlight",
+    min.cutoff = min_cut,
+    max.cutoff = max_cut
+  ) +
+    scale_fill_gradientn(
+      colours = c("yellow", "orange", "red"),
+      na.value = "grey80") +
+    ggtitle(s) + 
+    theme(
+      legend.position = "right",
+      legend.direction = "vertical",
+      text = element_text(family = "Times New Roman", size = 16, face = "bold")
+    )
+})
+
+names(plots) <- unique(bcell_obj$sample)
+
+plots
+
+#save all the plots
+for (s in names(plots)) {
+  
+  ggsave(
+    filename = paste0("~/Desktop/Figure 5/Figure 5C/Senescence_Bcell_", s, ".png"),
+    plot = plots[[s]],
+    width = 6,
+    height = 6,
+    dpi = 600
+  )
+}
+
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
