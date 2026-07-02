@@ -1,4 +1,4 @@
-# April 5-2024
+
 #Integrate the data
 
 library(Seurat)
@@ -9,25 +9,25 @@ library(harmony)
 
 
 # Read the Data for Non Smokers
-NS2 <- Read10X(data.dir = "E:/deliv_Rahman_10X_100422_counts (2).tar/deliv_Rahman_10X_100422_counts (2)/deliv_Rahman_10X_100422_counts/Sample_IR_RL_021_2/outs/filtered_feature_bc_matrix")
-NS4 <- Read10X(data.dir = "E:/deliv_Rahman_10X_100422_counts (2).tar/deliv_Rahman_10X_100422_counts (2)/deliv_Rahman_10X_100422_counts/Sample_IR_RL_028_2/outs/filtered_feature_bc_matrix")
-NS5 <- Read10X(data.dir = "E:/deliv_Rahman_10X_100422_counts (2).tar/deliv_Rahman_10X_100422_counts (2)/deliv_Rahman_10X_100422_counts/Sample_IR_RL_031/outs/filtered_feature_bc_matrix")
-NS6 <- Read10X(data.dir = "F:/Data/filtered_feature_bc_matrix_Sample17")
+NS2 <- Read10X(data.dir = "....path to folder/Sample_IR_RL_021_2/.../filtered_feature_bc_matrix")
+NS4 <- Read10X(data.dir = "....path to folder/Sample_IR_RL_028_2/.../filtered_feature_bc_matrix")
+NS5 <- Read10X(data.dir = "....path to folder/Sample_IR_RL_031/.../filtered_feature_bc_matrix")
+NS6 <- Read10X(data.dir = "...path to folder/Sample_IR_RL_017/.../filtered_feature_bc_matrix")
 
 # Read the Data for Smokers
 
-Sm1 <- Read10X(data.dir = "E:/deliv_Rahman_10X_100422_counts (2).tar/deliv_Rahman_10X_100422_counts (2)/deliv_Rahman_10X_100422_counts/Sample_IR_LL_032/outs/filtered_feature_bc_matrix")
-Sm2 <- Read10X(data.dir = "E:/deliv_Rahman_10X_100422_counts (2).tar/deliv_Rahman_10X_100422_counts (2)/deliv_Rahman_10X_100422_counts/Sample_IR_RL_034_2/outs/filtered_feature_bc_matrix")
-Sm3 <- Read10X(data.dir = "E:/deliv_Rahman_10X_100422_counts (2).tar/deliv_Rahman_10X_100422_counts (2)/deliv_Rahman_10X_100422_counts/Sample_Liberase_LUL/outs/filtered_feature_bc_matrix")
-Sm4 <- Read10X(data.dir = "F:/Data/filtered_feature_bc_matrix_Sample15")
+Sm1 <- Read10X(data.dir = "....path to folder/Sample_IR_LL_032/.../filtered_feature_bc_matrix")
+Sm2 <- Read10X(data.dir = "....path to folder/Sample_IR_RL_034_2/.../filtered_feature_bc_matrix")
+Sm3 <- Read10X(data.dir = "....path to folder/Sample_IR_RL_014/.../filtered_feature_bc_matrix")
+Sm4 <- Read10X(data.dir = "....path to folder/Sample_IR_RL_015/...filtered_feature_bc_matrix")
 
 # Read the Data for COPD
 
-C1 <- Read10X(data.dir = "E:/deliv_Rahman_10X_100422_counts (2).tar/deliv_Rahman_10X_100422_counts (2)/deliv_Rahman_10X_100422_counts/Sample_IR_RL_018/outs/filtered_feature_bc_matrix")
-C3 <- Read10X(data.dir = "E:/deliv_Rahman_10X_100422_counts (2).tar/deliv_Rahman_10X_100422_counts (2)/deliv_Rahman_10X_100422_counts/Sample_IR_RL_023/outs/filtered_feature_bc_matrix")
-C5 <- Read10X(data.dir = "E:/deliv_Rahman_10X_100422_counts (2).tar/deliv_Rahman_10X_100422_counts (2)/deliv_Rahman_10X_100422_counts/Sample_IR_RL_027_2/outs/filtered_feature_bc_matrix")
-C6 <- Read10X(data.dir = "E:/deliv_Rahman_10X_100422_counts (2).tar/deliv_Rahman_10X_100422_counts (2)/deliv_Rahman_10X_100422_counts/Sample_IR_RL_029/outs/filtered_feature_bc_matrix")
-C7 <- Read10X(data.dir = "F:/Data/filtered_feature_bc_matrix_Sample16")
+C1 <- Read10X(data.dir = "....path to folder/Sample_IR_RL_018/.../filtered_feature_bc_matrix")
+C3 <- Read10X(data.dir = "....path to folder/Sample_IR_RL_023/.../filtered_feature_bc_matrix")
+C5 <- Read10X(data.dir = "....path to folder/Sample_IR_RL_027_2/.../filtered_feature_bc_matrix")
+C6 <- Read10X(data.dir = "....path to folder/Sample_IR_RL_029/.../filtered_feature_bc_matrix")
+C7 <- Read10X(data.dir = "....path to folder/Sample_IR_RL_016/.../filtered_feature_bc_matrix")
 
 # Make Seurat object
 NS2 <- CreateSeuratObject(counts = NS2, project = "nonsmoker", assay = "RNA", min.features = 200, min.cells = 3)
@@ -120,7 +120,7 @@ g <- VlnPlot(merged.samples_postfilter, features = c("percent.mt"), cols = c("or
 
 #Save the the mitochondrial percentages
 
-ggsave(g, filename = 'D:/Combined Results/mtPercent_postFiltration_mtdna_copd_30.tiff', width = 10, height =8)
+ggsave(g, filename = '...path_to_folder/mtPercent_postFiltration_mtdna_copd_30.tiff', width = 10, height =8)
 
 
 # 3. Normalize data ----------
@@ -164,73 +164,13 @@ after <- DimPlot(merged.samples.harmony, reduction = 'umap', group.by = 'orig.id
 
 h <- before|after
 
-ggsave(h, filename = 'D:/Combined Results/before and after harmony.tiff', width = 10, height =8)
+ggsave(h, filename = '...path_to_folder/before and after harmony.tiff', width = 10, height =8)
 
-saveRDS(merged.samples.harmony, "D:/Combined Results/HarmonyIntegratedData.rds") 
+saveRDS(merged.samples.harmony, "...path_to_folder/HarmonyIntegratedData.rds") 
 
 i <- DimPlot(merged.samples.harmony, reduction = 'umap', group.by = 'seurat_clusters')
 
-ggsave(i, filename = 'D:/Combined Results/UMAP_after_harmony.tiff', width = 10, height =8)
-
-
-
-
-#Integration Method#2 
-#SC Tranform
-#Split seurat object by condition to perform QC
-
-merged.samples_preintegration <- SplitObject(merged.samples_postfilter, split.by = "orig.ident")
-#merged.samples_preintegration1 <- SplitObject(merged.samples_postfilter, split.by = "sample")
-
-#Integrations of dataset#
-# normalize and identify variable features for each dataset independently
-
-split_mergedsamples_filtered <- lapply(X = merged.samples_preintegration, FUN = function(x) 
-{x <- SCTransform(x, method = "glmGamPoi", variable.features.n = 3000, return.only.var.genes = TRUE)})
-
-#split_mergedsamples_filtered1 <- lapply(X = merged.samples_preintegration1, FUN = function(x) 
-#{x <- SCTransform(x, method = "glmGamPoi", variable.features.n = 3000, return.only.var.genes = TRUE)})
-
-# select features that are repeatedly variable across datasets for integration
-
-features <- SelectIntegrationFeatures(object.list = split_mergedsamples_filtered, nfeatures = 3000)
-#features1 <- SelectIntegrationFeatures(object.list = split_mergedsamples_filtered1, nfeatures = 3000)
-
-# Prepare the SCT list object for integration
-
-split_samples_prep <- PrepSCTIntegration(object.list = split_mergedsamples_filtered, anchor.features = features)
-
-#split_samples_prep1 <- PrepSCTIntegration(object.list = split_mergedsamples_filtered1, anchor.features = features1)
-
-# Find anchor for integration
-
-split_sample_anchor <- FindIntegrationAnchors(object.list = split_samples_prep1, anchor.features = features1, dims = 1:40, normalization.method = "SCT")
-
-integrated_sample <- IntegrateData(anchorset = split_sample_anchor, dims = 1:40, normalization.method = "SCT")
-
-# Save the Data
-
-saveRDS(integrated_sample, "D:/Combined Results/SCT_integration.rds") 
-
-
-DefaultAssay(integrated_ecig) <- "integrated"
-
-# Run the standard workflow for visualization and clustering
-
-integrated_sample <- RunPCA(integrated_sample, npcs = 40, verbose = TRUE)
-integrated_sample <- RunUMAP(integrated_sample, reduction = "pca", dims = 1:40)
-integrated_sample <- FindNeighbors(integrated_sample, reduction = "pca", dims = 1:40)
-integrated_sample <- FindClusters(integrated_sample, resolution = c(0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.8, 2))
-
-# Assign identity of clusters
-
-Idents(object = integrated_sample) <- "integrated_snn_res.1"
-
-# Visualization
-
-p1 <- DimPlot(integrated_sample, reduction = "umap", group.by = "integrated_snn_res.1")
-ggsave(p1, filename = 'D:/Combined Results/SCTintegration_UMAP.tiff', width = 10, height =8)
-
+ggsave(i, filename = '...path_to_folder/UMAP_after_harmony.tiff', width = 10, height =8)
 
 
 
