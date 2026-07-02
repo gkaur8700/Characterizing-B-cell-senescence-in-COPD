@@ -1,0 +1,88 @@
+---
+title: "Figure 3"
+author: "GK"
+date: "2025-05-3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+library(Seurat) 
+library(ggplot2)
+library(tidyverse)
+library(writexl)
+library(DESeq2)
+
+#Read the data
+data <- readRDS("/Volumes/My Passport/Final Data/HarmonyIntegrated_annotated_data_final.rds")
+
+data$CellTypes <- Idents(data)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r, echo=TRUE}
+p1 <- DimPlot(data,
+              reduction = "umap",
+              label = TRUE,
+              label.size = 5, pt.size = 0.5, repel = TRUE
+) + NoLegend()
+
+# Make the fonts Bold
+
+p2 <- p1 + theme(
+  text = element_text(face = "bold"),
+  legend.text = element_text(face = "bold"),
+  axis.title = element_text(face = "bold"),
+  axis.text = element_text(face = "bold")
+)
+
+print(p2)
+
+# Plot the UMAP of before and after to compare
+Plot1 <- DimPlot(data, split.by = "orig.ident",
+                reduction = "umap",
+                label = FALSE,
+                label.size = 5, pt.size = 0.5, repel = TRUE
+) + NoLegend()
+
+print(Plot1)
+
+#Save the Plot
+
+ggsave(Plot1, filename = '~/Desktop/Group_split.tiff', width = 10, height =8)
+
+Plot2 <- DimPlot(data,
+                reduction = "umap",
+                label = TRUE,
+                label.size = 5, pt.size = 0.5, repel = TRUE
+)
+
+print(Plot2)
+
+Plot3 <- DimPlot(data,
+                reduction = "umap", pt.size = 0.8,
+                label = FALSE,
+)  + NoLegend()
+
+print(Plot3)
+
+ggsave(p2, filename = '~/Desktop/Annotated_umap_Plot_general_final.tiff', width = 10, height =8)
+ggsave(Plot2, filename = '~/Desktop/AnnotatedPlotwithlabels_final.tiff', width = 12, height =10)
+ggsave(Plot3, filename = '~/Desktop/AnnotatedPlotwithoutlabels_final.tiff', width = 12, height =10)
+
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
