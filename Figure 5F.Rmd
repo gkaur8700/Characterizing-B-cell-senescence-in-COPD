@@ -1,0 +1,210 @@
+---
+title: "Figure 5F"
+author: "GK"
+date: "2026-02-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r B cell senescence}
+library(Seurat)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+
+#read the rds
+data <- readRDS("/Users/gagandeepkaur/Desktop/Figure 5/Figure 5B/Raw Data/All_merged_after_integration_annotated_20260225.rds")
+
+#subset the spatial seurat object to only identify the B cell population
+
+bcell_obj <- subset(data, idents = "B cells")
+
+#get the B cell associated senescence geneset from scRNA seq analyses as identified in Figure 4B
+
+sen_gene <- read.csv("/Users/gagandeepkaur/Desktop/Figure 5/Figure 5D-E/Data input/Sig_Bcell_ senescence_genes.csv") # this geneset has all the genes included after the gsea analyses and were linked to B cell senescence
+
+sc_sig <- sen_gene$Genes
+
+#score the signature in Visium
+
+bcell_obj <- AddModuleScore(bcell_obj, features = list(sc_sig), name = "Sen_signature")
+
+#get a mean and median score for the senescnece signature across all the samples
+df <- as.data.frame(
+  bcell_obj@meta.data[, c("sample", "Sen_signature1")]
+)
+
+sample_summary <- df %>%
+  group_by(sample) %>%
+  summarise(
+    mean_score = mean(Sen_signature1, na.rm = TRUE),
+    median_score = median(Sen_signature1, na.rm = TRUE)
+  )
+```
+
+## Comparison 
+
+```{r DESeq2 analyses}
+library(DESeq2)
+
+#extract counts information
+counts <- GetAssayData(bcell_obj, layer = "counts")
+
+#create high and low senescence groups
+
+median_score <- median(bcell_obj$Sen_signature1, na.rm = TRUE)
+
+bcell_obj$sen_group <- ifelse(
+  bcell_obj$Sen_signature1 > median_score,
+  "High",
+  "Low"
+)
+
+# add conditions column by making a vector
+condition_map <- c(
+  "copd1" = "COPD",
+  "copd2" = "COPD",
+  "copd3" = "COPD",
+  "nonsmoker1" = "NS",
+  "nonsmoker2" = "NS",
+  "nonsmoker3" = "NS",
+  "smoker1" = "Sm"
+)
+bcell_obj@meta.data$condition <- condition_map[
+  bcell_obj@meta.data$sample
+]
+
+#Aggregate counts per condition and sen_state
+library(Matrix)
+
+meta <- bcell_obj@meta.data
+
+meta$group_id <- paste(
+  meta$sample,
+  meta$sen_group,
+  sep = "_"
+)
+
+# Reorder metadata to match count matrix columns
+meta <- meta[colnames(counts), ]
+
+pseudobulk_counts <- rowsum(
+  t(as.matrix(counts)),
+  group = meta$sample
+)
+
+pseudobulk_counts <- t(pseudobulk_counts)
+
+#pseudobulk based on high and low senescence score
+
+pseudobulk_counts_sen <- rowsum(
+  t(as.matrix(counts)),
+  group = meta$group_id
+)
+
+pseudobulk_counts_sen <- t(pseudobulk_counts_sen)
+
+
+sample_info <- data.frame(
+row.names = colnames(pseudobulk_counts_sen)
+)
+
+# Extract sample name
+sample_info$sample <- sapply(
+  strsplit(colnames(pseudobulk_counts_sen), "_"),
+  `[`, 1
+)
+
+# Extract senescence group
+sample_info$sen_group <- sapply(
+  strsplit(colnames(pseudobulk_counts_sen), "_"),
+  `[`, 2
+)
+
+# Get condition from original metadata
+sample_info$condition <- bcell_obj@meta.data[
+  match(sample_info$sample, bcell_obj$sample),
+  "condition"
+]
+
+# Convert to factors
+sample_info$sen_group <- factor(sample_info$sen_group)
+sample_info$condition <- factor(sample_info$condition)
+
+head(sample_info)
+
+#perform DESeq2
+
+dds <- DESeqDataSetFromMatrix(
+  countData = pseudobulk_counts_sen,
+  colData = sample_info,
+  design = ~ condition + sen_group
+)
+
+# Set NS as the reference for condition
+dds$condition <- relevel(dds$condition, ref = "NS")
+
+# Set High as the reference for sen_group
+dds$sen_group <- relevel(dds$sen_group, ref = "Low")
+
+# Re-run DESeq
+dds <- DESeq(dds)
+
+# Check the coefficient names again
+resultsNames(dds)
+
+res_copd <- results(dds, name="condition_COPD_vs_NS")
+res_sen <- results(dds, name="sen_group_High_vs_Low")
+
+# Significant genes with padj < 0.05
+sig_res_copd <- res_copd[which(res_copd$padj < 0.05), ]
+
+sig_res_sen_strict <- res_sen[
+  which(res_sen$padj < 0.05 & abs(res_sen$log2FoldChange) > 1),
+]
+
+head(sig_res_sen_strict)
+
+write.csv(as.data.frame(sig_res_sen_strict),
+          file="/Users/gagandeepkaur/Desktop/Figure 5/High_vs_Low_senescence_strict.csv")
+
+sig_res_strict <- res_copd[
+  which(res_copd$padj < 0.05
+        & abs(res_copd$log2FoldChange) > 2.5),
+]
+
+head(sig_res_strict)
+
+write.csv(as.data.frame(sig_res_strict),
+          file="/Users/gagandeepkaur/Desktop/Figure 5/COPD_vs_NS_significant.csv",
+          row.names = TRUE)
+
+
+#subset to your genes for z score
+
+sig_genes <- rownames(sig_res_strict)  # the ones you filtered earlier
+
+
+vsd <- vst(dds, blind = FALSE)
+
+mat_copd <- assay(vsd)[sig_genes, ]
+
+#convert to z-score
+zmat_copd <- t(scale(t(mat_copd)))
+
+head(zmat_copd)
+
+write.csv(zmat_copd, file="~/Desktop/Figure 5/zscore_copd_vs_ns.csv", row.names = TRUE)
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
