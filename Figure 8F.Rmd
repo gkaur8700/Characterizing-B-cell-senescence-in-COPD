@@ -17,8 +17,8 @@ library(clusterProfiler)
 You can also embed plots, for example:
 
 ```{r read the files}
-at <- read.csv("/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/Figure 8D-E/Processed Files/Sig DEGs/copd_vs_ns_at2_sig.csv")
-mnn <- read.csv("/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/Figure 8D-E/Processed Files/Sig DEGs/copd_vs_ns_mnn_sig.csv")
+at <- read.csv("/path_to_folder/copd_vs_ns_at2_sig.csv")
+mnn <- read.csv("/path_to_folder/copd_vs_ns_mnn_sig.csv")
 
 ```
 
@@ -33,7 +33,6 @@ ensemble <- useEnsembl('ensembl', mirror = 'useast')
 
 attr <- listAttributes(Ensemble)
 Ensemble <- useEnsembl(biomart="genes", dataset = "hsapiens_gene_ensembl")
-
 
 ```
 
@@ -72,7 +71,7 @@ GO_results2 <- enrichGO(gene = col2, OrgDb = "org.Hs.eg.db", keyType = "ENSEMBL"
 edox2 <- setReadable(GO_results2, 'org.Hs.eg.db', 'ENSEMBL')
 head(edox2)
 fit2 <- plot(barplot(edox2, showCategory =10))
-write.csv(edox2, file = "/Users/gagandeepkaur/Desktop/copd_vs_ns_AT2_down_GOanalyses.csv")
+write.csv(edox2, file = "/path_to_folder/copd_vs_ns_AT2_down_GOanalyses.csv")
 
 ```
 
@@ -93,7 +92,7 @@ GO_results3 <- enrichGO(gene = col3, OrgDb = "org.Hs.eg.db", keyType = "ENSEMBL"
 edox3 <- setReadable(GO_results3, 'org.Hs.eg.db', 'ENSEMBL')
 head(edox3)
 fit3 <- plot(barplot(edox3, showCategory =10))
-write.csv(edox3, file = "/Users/gagandeepkaur/Desktop/copd_vs_ns_MNN_up_GOanalyses.csv")
+write.csv(edox3, file = "/path_to_folder/copd_vs_ns_MNN_up_GOanalyses.csv")
 
 #Downregulated
 mnn.down <- mnn[mnn$log2FoldChange < -0.5,]
@@ -110,9 +109,8 @@ GO_results4 <- enrichGO(gene = col4, OrgDb = "org.Hs.eg.db", keyType = "ENSEMBL"
 edox4 <- setReadable(GO_results4, 'org.Hs.eg.db', 'ENSEMBL')
 head(edox4)
 fit4 <- plot(barplot(edox4, showCategory =10))
-write.csv(edox4, file = "/Users/gagandeepkaur/Desktop/copd_vs_ns_MNN_down_GOanalyses.csv")
-
+write.csv(edox4, file = "/path_to_folder/copd_vs_ns_MNN_down_GOanalyses.csv")
 
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
