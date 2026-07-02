@@ -1,13 +1,9 @@
 ---
-title: "Figure 5D"
+title: "Figure 5D-E"
 author: "GK"
 date: "2026-02-25"
 output: html_document
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 ## R Markdown
 
@@ -22,7 +18,7 @@ library(ggplot2)
 library(tidyverse)
 
 #read the rds
-data <- readRDS("/Users/gagandeepkaur/Desktop/Figure 5/Figure 5B/Raw Data/All_merged_after_integration_annotated_20260225.rds")
+data <- readRDS("/path_to_folder/All_merged_after_integration_annotated.rds")
 
 #subset the spatial seurat object to only identify the B cell population
 
@@ -35,7 +31,8 @@ bcell_obj <- subset(data, idents = "B cells")
 ```{r BSM}
 #get the B cell associated senescence geneset from scRNA seq analyses as identified in Figure 4B
 
-sen_gene <- read.csv("/Users/gagandeepkaur/Desktop/Figure 5/Figure 5D-E/Data input/Sig_Bcell_ senescence_genes.csv") # this geneset has all the genes included after the gsea analyses and were linked to B cell senescence
+sen_gene <- read.csv("/path_to_folder/Sig_Bcell_ senescence_genes.csv") 
+# this geneset has all the genes included after the gsea analyses and were linked to B cell senescence
 
 sc_sig <- sen_gene$Genes
 
@@ -57,7 +54,7 @@ sample_summary <- df %>%
 
 sample_summary
 
-write.csv(sample_summary, "/Users/gagandeepkaur/Desktop/Figure 5/Figure 5C/Sen_Score_Bcell.csv")
+write.csv(sample_summary, "/path_to_folder/Sen_Score_Bcell.csv")
 
 ```
 
@@ -118,7 +115,7 @@ plots
 for (s in names(plots)) {
   
   ggsave(
-    filename = paste0("~/Desktop/Figure 5/Figure 5C/Senescence_Bcell_", s, ".png"),
+    filename = paste0("/path_to_folder/Figure 5D-E/Senescence_Bcell_", s, ".png"),
     plot = plots[[s]],
     width = 6,
     height = 6,
