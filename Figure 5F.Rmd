@@ -5,10 +5,6 @@ date: "2026-02-25"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 ## R Markdown
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
@@ -22,7 +18,7 @@ library(ggplot2)
 library(tidyverse)
 
 #read the rds
-data <- readRDS("/Users/gagandeepkaur/Desktop/Figure 5/Figure 5B/Raw Data/All_merged_after_integration_annotated_20260225.rds")
+data <- readRDS("/path_to_folder/All_merged_after_integration_annotated.rds")
 
 #subset the spatial seurat object to only identify the B cell population
 
@@ -175,7 +171,7 @@ sig_res_sen_strict <- res_sen[
 head(sig_res_sen_strict)
 
 write.csv(as.data.frame(sig_res_sen_strict),
-          file="/Users/gagandeepkaur/Desktop/Figure 5/High_vs_Low_senescence_strict.csv")
+          file="/path_to_folder/High_vs_Low_senescence_strict.csv")
 
 sig_res_strict <- res_copd[
   which(res_copd$padj < 0.05
@@ -185,7 +181,7 @@ sig_res_strict <- res_copd[
 head(sig_res_strict)
 
 write.csv(as.data.frame(sig_res_strict),
-          file="/Users/gagandeepkaur/Desktop/Figure 5/COPD_vs_NS_significant.csv",
+          file="/path_to_folder/COPD_vs_NS_significant.csv",
           row.names = TRUE)
 
 
@@ -195,7 +191,6 @@ sig_genes <- rownames(sig_res_strict)  # the ones you filtered earlier
 
 
 vsd <- vst(dds, blind = FALSE)
-
 mat_copd <- assay(vsd)[sig_genes, ]
 
 #convert to z-score
@@ -203,8 +198,6 @@ zmat_copd <- t(scale(t(mat_copd)))
 
 head(zmat_copd)
 
-write.csv(zmat_copd, file="~/Desktop/Figure 5/zscore_copd_vs_ns.csv", row.names = TRUE)
+write.csv(zmat_copd, file="/path_to_folder/zscore_copd_vs_ns.csv", row.names = TRUE)
 
 ```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
