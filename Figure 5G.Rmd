@@ -1,0 +1,222 @@
+---
+title: "Figure 5F"
+author: "GK"
+date: "2026-02-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r Distance matrix}
+library(FNN)        
+library(dplyr)
+library(Seurat)
+
+#read the rds
+data <- readRDS("/Users/gagandeepkaur/Desktop/Figure 5/Figure 5B/Raw Data/All_merged_after_integration_annotated_20260225.rds")
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r nearest neighbor}
+#Subset the integrated data by sample name
+
+sample1 <- subset(data, subset = sample == "nonsmoker1")
+sample2 <- subset(data, subset = sample == "nonsmoker2")
+sample3 <- subset(data, subset = sample == "nonsmoker3")
+sample4 <- subset(data, subset = sample == "smoker1")
+sample5 <- subset(data, subset = sample == "copd1")
+sample6 <- subset(data, subset = sample == "copd2")
+sample7 <- subset(data, subset = sample == "copd3")
+
+# Step 1 — extract coordinates for each
+coords_subset1 <- GetTissueCoordinates(sample1)
+coords_subset2 <- GetTissueCoordinates(sample2)
+coords_subset3 <- GetTissueCoordinates(sample3)
+coords_subset4 <- GetTissueCoordinates(sample4)
+coords_subset5 <- GetTissueCoordinates(sample5)
+coords_subset6 <- GetTissueCoordinates(sample6)
+coords_subset7 <- GetTissueCoordinates(sample7)
+
+# Ensure rownames are set to the cell IDs
+rownames(coords_subset1) <- coords_subset1$cell
+
+# Identify B cells and AT2 cells based on sample1$celltype
+b_spots   <- rownames(coords_subset1)[sample1$celltype[coords_subset1$cell] == "B cells"]
+at2_spots <- rownames(coords_subset1)[sample1$celltype[coords_subset1$cell] == "AT2"]
+
+# Subset the coordinates
+coords_bcell <- coords_subset1[b_spots, c("x","y"), drop = FALSE]
+coords_at2   <- coords_subset1[at2_spots, c("x","y"), drop = FALSE]
+
+nn <- get.knnx(
+  data  = as.matrix(coords_at2),    # reference points (AT2)
+  query = as.matrix(coords_bcell),  # query points (B cells)
+  k     = 1
+)
+
+
+# Distances from B cells to nearest AT2
+distances_ns1 <- nn$nn.dist
+
+summary(distances_ns1)
+
+#repeat for other samples
+#ns2
+# Ensure rownames are set to the cell IDs
+rownames(coords_subset2) <- coords_subset2$cell
+
+# Identify B cells and AT2 cells based on sample1$celltype
+b_spots   <- rownames(coords_subset2)[sample2$celltype[coords_subset2$cell] == "B cells"]
+at2_spots <- rownames(coords_subset2)[sample2$celltype[coords_subset2$cell] == "AT2"]
+
+# Subset the coordinates
+coords_bcell <- coords_subset2[b_spots, c("x","y"), drop = FALSE]
+coords_at2   <- coords_subset2[at2_spots, c("x","y"), drop = FALSE]
+
+nn <- get.knnx(
+  data  = as.matrix(coords_at2),    # reference points (AT2)
+  query = as.matrix(coords_bcell),  # query points (B cells)
+  k     = 1
+)
+
+
+# Distances from B cells to nearest AT2
+distances_ns2 <- nn$nn.dist
+summary(distances_ns2)
+
+#ns3
+# Ensure rownames are set to the cell IDs
+rownames(coords_subset3) <- coords_subset3$cell
+
+# Identify B cells and AT2 cells based on sample1$celltype
+b_spots   <- rownames(coords_subset3)[sample3$celltype[coords_subset3$cell] == "B cells"]
+at2_spots <- rownames(coords_subset3)[sample3$celltype[coords_subset3$cell] == "AT2"]
+
+# Subset the coordinates
+coords_bcell <- coords_subset3[b_spots, c("x","y"), drop = FALSE]
+coords_at2   <- coords_subset3[at2_spots, c("x","y"), drop = FALSE]
+
+nn <- get.knnx(
+  data  = as.matrix(coords_at2),    # reference points (AT2)
+  query = as.matrix(coords_bcell),  # query points (B cells)
+  k     = 1
+)
+
+
+# Distances from B cells to nearest AT2
+distances_ns3 <- nn$nn.dist
+
+summary(distances_ns3)
+
+#sm1
+# Ensure rownames are set to the cell IDs
+rownames(coords_subset4) <- coords_subset4$cell
+
+# Identify B cells and AT2 cells based on sample1$celltype
+b_spots   <- rownames(coords_subset4)[sample4$celltype[coords_subset4$cell] == "B cells"]
+at2_spots <- rownames(coords_subset4)[sample4$celltype[coords_subset4$cell] == "AT2"]
+
+# Subset the coordinates
+coords_bcell <- coords_subset4[b_spots, c("x","y"), drop = FALSE]
+coords_at2   <- coords_subset4[at2_spots, c("x","y"), drop = FALSE]
+
+nn <- get.knnx(
+  data  = as.matrix(coords_at2),    # reference points (AT2)
+  query = as.matrix(coords_bcell),  # query points (B cells)
+  k     = 1
+)
+
+
+# Distances from B cells to nearest AT2
+distances_sm1 <- nn$nn.dist
+
+summary(distances_sm1)
+
+#copd1
+# Ensure rownames are set to the cell IDs
+rownames(coords_subset5) <- coords_subset5$cell
+
+# Identify B cells and AT2 cells based on sample1$celltype
+b_spots   <- rownames(coords_subset5)[sample5$celltype[coords_subset5$cell] == "B cells"]
+at2_spots <- rownames(coords_subset5)[sample5$celltype[coords_subset5$cell] == "Ciliated Epithelial Cells"]
+
+# Subset the coordinates
+coords_bcell <- coords_subset5[b_spots, c("x","y"), drop = FALSE]
+coords_at2   <- coords_subset5[at2_spots, c("x","y"), drop = FALSE]
+
+nn <- get.knnx(
+  data  = as.matrix(coords_at2),    # reference points (AT2)
+  query = as.matrix(coords_bcell),  # query points (B cells)
+  k     = 1
+)
+
+# could not perform as there were no AT2 cells; so did on ciliated cells instead
+# Distances from B cells to nearest AT2
+distances_c1 <- nn$nn.dist
+
+summary(distances_c1)
+
+#copd2
+# Ensure rownames are set to the cell IDs
+rownames(coords_subset6) <- coords_subset6$cell
+
+# Identify B cells and AT2 cells based on sample1$celltype
+b_spots   <- rownames(coords_subset6)[sample6$celltype[coords_subset6$cell] == "B cells"]
+at2_spots <- rownames(coords_subset6)[sample6$celltype[coords_subset6$cell] == "AT2"]
+
+# Subset the coordinates
+coords_bcell <- coords_subset6[b_spots, c("x","y"), drop = FALSE]
+coords_at2   <- coords_subset6[at2_spots, c("x","y"), drop = FALSE]
+
+nn <- get.knnx(
+  data  = as.matrix(coords_at2),    # reference points (AT2)
+  query = as.matrix(coords_bcell),  # query points (B cells)
+  k     = 1
+)
+
+# could not perform as there were no AT2 cells
+# Distances from B cells to nearest AT2
+distances_c2 <- nn$nn.dist
+
+summary(distances_c2)
+
+#copd3
+# Ensure rownames are set to the cell IDs
+rownames(coords_subset7) <- coords_subset7$cell
+
+# Identify B cells and AT2 cells based on sample1$celltype
+b_spots   <- rownames(coords_subset7)[sample7$celltype[coords_subset7$cell] == "B cells"]
+at2_spots <- rownames(coords_subset7)[sample7$celltype[coords_subset7$cell] == "AT2"]
+
+# Subset the coordinates
+coords_bcell <- coords_subset7[b_spots, c("x","y"), drop = FALSE]
+coords_at2   <- coords_subset7[at2_spots, c("x","y"), drop = FALSE]
+
+nn <- get.knnx(
+  data  = as.matrix(coords_at2),    # reference points (AT2)
+  query = as.matrix(coords_bcell),  # query points (B cells)
+  k     = 1
+)
+
+# could not perform as there were no AT2 cells
+# Distances from B cells to nearest AT2
+distances_c3 <- nn$nn.dist
+
+summary(distances_c3)
+
+
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
