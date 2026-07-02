@@ -5,12 +5,6 @@ date: "2024-07-06"
 output: html_document
 ---
 
-```{r libraries, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-
-```
-
 ## R Markdown
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
@@ -25,7 +19,7 @@ library(writexl)
 library(DESeq2)
 
 #read the .rds file
-data <- readRDS("/Volumes/My Passport/Final Data/HarmonyIntegrated_annotated_data_final.rds")
+data <- readRDS("/path_to_folder/HarmonyIntegrated_annotated_data_final.rds")
 
 data$CellTypes <- Idents(data)
 
@@ -84,8 +78,6 @@ cts.split.modified <- lapply(cts.split, function(x){
 ```
 
 ## DESeq2 for AT2
-
-You can also embed plots, for example:
 
 ```{r AT2}
 # Let's run DE analysis with AT2
@@ -290,6 +282,7 @@ summary(Sig_res9)
 ```
 
 #DESeq2 for B cells
+
 ```{r B cells}
 
 #B CELLS
@@ -363,6 +356,7 @@ summary(Sig_res12)
 ```
 
 #DESeq2 for CD4 cells
+
 ```{r CD4 T cells}
 #CD4 T cells
 
@@ -433,6 +427,7 @@ Sig_res15 <- subset(res15, padj < 0.05)
 ```
 
 #DESeq2 for CD8 T cells
+
 ```{r CD8 T cells}
 # CD8 T CELLS
 
@@ -501,6 +496,7 @@ summary(res18)
 ```
 
 #DESeq2 for Classical Monocytes
+
 ```{r CM}
 # Let's run DE analysis with classical monocytes
 # 1. Get counts matrix
@@ -570,6 +566,7 @@ summary(Sig_res21)
 ```
 
 #DESeq2 for Non clssical monocytes
+
 ```{r NCM}
 # Let's run DE analysis with Non-classical monocytes
 # 1. Get counts matrix
@@ -635,6 +632,7 @@ summary(res24)
 ```
 
 #DESeq2 for DC2
+
 ```{r DC2}
 
 # Let's run DE analysis with DC2
@@ -710,6 +708,7 @@ summary(Sig_res27)
 ```
 
 #DESeq2 for NK cells
+
 ```{r NK cells}
 # Let's run DE analysis with NK cells
 # 1. Get counts matrix
@@ -784,6 +783,7 @@ summary(Sig_res30)
 ```
 
 #DESeq2 for Plasma Cells
+
 ```{r PC}
 #PLASMA CELLS
 
