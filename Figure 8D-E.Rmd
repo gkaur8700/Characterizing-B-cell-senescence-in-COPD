@@ -1,0 +1,293 @@
+---
+title: "DEGs"
+author: "GK"
+date: "2025-07-04"
+output: html_document
+---
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r load libraries}
+library(Seurat) 
+library(tidyverse)
+library(writexl)
+library(DESeq2)
+```
+
+
+```{r Load the integrated file}
+
+data <- readRDS("/Volumes/My Passport/Final Data/HarmonyIntegrated_annotated_data_final.rds")
+
+# filter
+#change filter conditions based on the file
+seu.filtered <- subset(data, subset = nFeature_RNA > 200 &
+                         nCount_RNA > 800 & 
+                         percent.mt < 5 
+)
+
+# run Seurat's standard workflow steps
+seu.filtered <- NormalizeData(seu.filtered)
+seu.filtered <- FindVariableFeatures(seu.filtered)
+seu.filtered <- ScaleData(seu.filtered)
+seu.filtered <- RunPCA(seu.filtered)
+seu.filtered <- RunUMAP(seu.filtered, dims = 1:20)
+
+```
+
+```{r preparing the counts matrix for pseudobulk comparison}
+seu.filtered$CellTypes <- Idents(seu.filtered)
+
+# pseudo-bulk workflow -----------------
+# Acquiring necessary metrics for aggregation across cells in a sample
+# 1. counts matrix - sample level
+# counts aggregate to sample level
+#see if we need to do this 
+
+seu.filtered$samples <- paste0(seu.filtered$orig.ident, seu.filtered$CellTypes)
+
+cts <- AggregateExpression(seu.filtered, 
+                           group.by = c("CellTypes", "sample"),
+                           assays = 'RNA',
+                           slot = "counts",
+                           return.seurat = FALSE)
+
+cts <- cts$RNA
+
+# transpose
+cts.t <- t(cts)
+
+# convert to data.frame
+cts.t <- as.data.frame(cts.t)
+
+# get values where to split
+splitRows <- gsub('_.*', '', rownames(cts.t))
+
+# split data.frame
+cts.split <- split.data.frame(cts.t,
+                              f = factor(splitRows))
+
+# fix colnames and transpose
+cts.split.modified <- lapply(cts.split, function(x){
+  rownames(x) <- gsub('.*_(.*)_', '\\1', rownames(x))
+  t(x)
+  
+})
+
+
+```
+
+
+```{r DESeq2 MNN}
+# Let's run DE analysis with Multiciliated
+# 1. Get counts matrix
+counts_mnn <- cts.split.modified$`Multiciliated (non-nasal)`
+
+#2 generate sample level metadata - do it for each "control" sample vs "treated" sample   
+
+condition <- factor(c("copd", "copd", "copd", "copd", "copd", "nonsmoker", "nonsmoker", "nonsmoker", "smoker", "smoker", "smoker"))
+
+mnn_coldata <- data.frame(row.names = colnames(counts_mnn), condition)
+
+# Set factor level
+mnn_coldata$condition <- relevel(mnn_coldata$condition, ref = "nonsmoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+mnn_dds <- DESeqDataSetFromMatrix(countData = counts_mnn,
+                                  colData = mnn_coldata,
+                                  design = ~ condition)
+
+# filter
+keep <- rowSums(counts(mnn_dds)) >=10
+mnn_dds <- mnn_dds[keep,]
+
+# run DESeq2
+mnn_dds <- DESeq(mnn_dds)
+
+# Generate results object
+res01 <- results(mnn_dds, name = "condition_copd_vs_nonsmoker")
+summary(res01)
+
+write.csv(as.data.frame(res01), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_ns_mnn.csv")
+saveRDS(res01, "/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_ns_mnn.rds")
+
+Sig_res01 <- subset(res01, padj < 0.05)
+summary(Sig_res01)
+head(Sig_res01)
+write.csv(as.data.frame(Sig_res01), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_ns_mnn_sig.csv")
+
+
+res02 <- results(mnn_dds, name = "condition_smoker_vs_nonsmoker")
+summary(res02)
+
+saveRDS(res02, "/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sm_vs_ns_mnn.rds")
+write.csv(as.data.frame(res02), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sm_vs_ns_mnn.csv")
+
+# Set factor level to smoker
+mnn_coldata$condition <- relevel(mnn_coldata$condition, ref = "smoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+mnn_dds_1 <- DESeqDataSetFromMatrix(countData = counts_mnn,
+                                    colData = mnn_coldata,
+                                    design = ~ condition)
+
+
+# filter
+keep <- rowSums(counts(mnn_dds_1)) >=10
+mnn_dds_1 <- mnn_dds_1[keep,]
+
+# run DESeq2
+mnn_dds_1 <- DESeq(mnn_dds_1)
+
+# Generate results object
+res03 <- results(mnn_dds_1, name = "condition_copd_vs_smoker")
+summary(res03)
+
+write.csv(as.data.frame(res03), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_sm_mnn.csv")
+saveRDS(res03, "/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_sm_mnn.rds")
+
+write.csv(as.data.frame(counts_mnn), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/counts_mnn.csv")
+
+```
+
+```{r DESeq2 AT2}
+#AT2
+# Let's run DE analysis with AT2
+# 1. Get counts matrix
+counts_at <- cts.split.modified$`AT2`
+
+#2 generate sample level metadata - do it for each "control" sample vs "treated" sample   
+
+condition <- factor(c("copd", "copd", "copd", "copd", "copd", "nonsmoker", "nonsmoker", "nonsmoker", "nonsmoker", "smoker", "smoker", "smoker", "smoker"))
+
+at_coldata <- data.frame(row.names = colnames(counts_at), condition)
+
+# Set factor level
+at_coldata$condition <- relevel(at_coldata$condition, ref = "nonsmoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+at_dds <- DESeqDataSetFromMatrix(countData = counts_at,
+                                 colData = at_coldata,
+                                 design = ~ condition)
+
+# filter
+keep <- rowSums(counts(at_dds)) >=10
+at_dds <- at_dds[keep,]
+
+# run DESeq2
+at_dds <- DESeq(at_dds)
+
+# Generate results object
+res21 <- results(at_dds, name = "condition_copd_vs_nonsmoker")
+summary(res21)
+
+write.csv(as.data.frame(res21), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_ns_at2.csv")
+saveRDS(res21, "/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_ns_at2.rds")
+
+Sig_res21 <- subset(res21, padj < 0.05)
+summary(Sig_res21)
+head(Sig_res21)
+write.csv(as.data.frame(Sig_res21), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_ns_at2_sig.csv")
+
+
+res22 <- results(at_dds, name = "condition_smoker_vs_nonsmoker")
+summary(res22)
+
+saveRDS(res22, "/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sm_vs_ns_at2.rds")
+write.csv(as.data.frame(res22), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sm_vs_ns_at2.csv")
+
+Sig_res22 <- subset(res22, padj < 0.05)
+summary(Sig_res22)
+write.csv(as.data.frame(Sig_res22), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sm_vs_ns_at2_sig.csv")
+
+# Set factor level to smoker
+at_coldata$condition <- relevel(at_coldata$condition, ref = "smoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+at_dds_1 <- DESeqDataSetFromMatrix(countData = counts_at,
+                                   colData = at_coldata,
+                                   design = ~ condition)
+
+
+# filter
+keep <- rowSums(counts(at_dds_1)) >=10
+at_dds_1 <- at_dds_1[keep,]
+
+# run DESeq2
+at_dds_1 <- DESeq(at_dds_1)
+
+# Generate results object
+res23 <- results(at_dds_1, name = "condition_copd_vs_smoker")
+summary(res23)
+
+write.csv(as.data.frame(res23), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_sm_at2.csv")
+saveRDS(res23, "/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_sm_at2.rds")
+
+write.csv(as.data.frame(counts_at), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/counts_at2.csv")
+
+```
+
+
+```{r Z score}
+# Z-scores of important parameters
+
+#Multiciliated(non-nasal) for COPD vs NS
+
+mat_1 <- counts(mnn_dds, normalized = T)[rownames(Sig_res01),]
+
+#Z score
+mat1.z <- t(apply(mat_1, 1, scale))
+colnames(mat1.z) <- rownames(mnn_coldata)
+head(mat1.z)
+
+write.csv(as.data.frame(mat1.z), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sig_Zscore_copd_vs_ns_mnn.csv")
+
+#AT2 (COPD vs NS)
+
+mat_4 <- counts(at_dds, normalized = T)[rownames(Sig_res21),]
+
+#Z score
+mat4.z <- t(apply(mat_4, 1, scale))
+colnames(mat4.z) <- rownames(at_coldata)
+
+head(mat4.z)
+
+write.csv(as.data.frame(mat4.z), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sig_Zscore_copd_vs_ns_at2.csv")
+
+write.csv(as.data.frame(mat_4), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sig_counts_copd_vs_ns_at2.csv")
+
+#AT2 (Sm vs NS)
+
+mat_5 <- counts(at_dds, normalized = T)[rownames(Sig_res22),]
+
+#Z score
+mat5.z <- t(apply(mat_5, 1, scale))
+colnames(mat5.z) <- rownames(at_coldata)
+
+head(mat5.z)
+write.csv(as.data.frame(mat5.z), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sig_Zscore_sm_vs_ns_at2.csv")
+
+write.csv(as.data.frame(mat_5), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sig_counts_sm_vs_ns_at2.csv")
+
+
+
+```
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
