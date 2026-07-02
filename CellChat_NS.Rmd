@@ -21,12 +21,11 @@ library(dplyr)
 
 #Read the data
 ```{r read the integrated scRNA data}
-seu <- readRDS("/Volumes/My Passport/Final Data/HarmonyIntegrated_annotated_data_final.rds")
+seu <- readRDS("/path_to_folder/HarmonyIntegrated_annotated_data_final.rds")
 
 #subset the seu object based on the groups- nonsmoker, smoker and copd
 seu.nonsmoker <- subset(seu, subset = orig.ident == "nonsmoker")
 ```
-
 
 ```{r non-smokers}
 #Non smokers
@@ -68,7 +67,6 @@ netVisual_circle(cellchat2@net$count, vertex.weight = as.numeric(table(cellchat2
 netVisual_circle(cellchat2@net$weight, vertex.weight = as.numeric(table(cellchat2@idents)), weight.scale = TRUE)
 
 ```
-
 
 ```{r B cell in NS}
 #only choose B cells as senders and recievers
@@ -152,14 +150,12 @@ write.csv(
 
 ```
 
-
 ```{r save rds}
 
-saveRDS(cellchat2, file = "~/Desktop/cellchat_all_ns.rds")
-saveRDS(cellchat_b_ns, file = "~/Desktop/cellchat_bcell_ns.rds")
+saveRDS(cellchat2, file = "/path_to_folder/cellchat_all_ns.rds")
+saveRDS(cellchat_b_ns, file = "/path_to_folder/cellchat_bcell_ns.rds")
 
 ```
-
 
 ```{r Plot final graphs}
 
@@ -200,7 +196,7 @@ netVisual_circle(
 
 dev.off()  # close the device
 
-tiff("/Users/gagandeepkaur/Desktop/Cell_chat_ns.tiff",
+tiff("/path_to_folder/Cell_chat_ns.tiff",
      width = 6, height = 6, units = "in", res = 300)
 par(mar = c(2,2,2,2))
 par(family = "Times New Roman")
@@ -235,7 +231,7 @@ head(bcell_interactions_ns, 5)
 
 write.csv(
   bcell_interactions_ns,
-  "~/Desktop/Bcell_sender_ns.csv",
+  "/path_to_folder/Bcell_sender_ns.csv",
   row.names = FALSE
 )
 
