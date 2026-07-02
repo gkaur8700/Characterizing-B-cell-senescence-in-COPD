@@ -1,0 +1,243 @@
+---
+title: "Figure 7E"
+author: "GK"
+date: "2026-01-25"
+output: html_document
+---
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+  
+```{r load libraries}
+library(CellChat)
+library(Seurat)
+library(dplyr)
+```
+
+
+#Read the data
+```{r read the integrated scRNA data}
+seu <- readRDS("/Volumes/My Passport/Final Data/HarmonyIntegrated_annotated_data_final.rds")
+
+#subset the seu object based on the groups- nonsmoker, smoker and copd
+seu.nonsmoker <- subset(seu, subset = orig.ident == "nonsmoker")
+```
+
+
+```{r non-smokers}
+#Non smokers
+# normalized RNA expression data
+data.input2 <- GetAssayData(seu.nonsmoker, assay = "RNA", layer = "data")
+
+# metadata including cell types
+meta2 <- seu.nonsmoker@meta.data
+
+# assign the cell type information to a separate column
+meta2$celltype <- meta2$predicted.ann_finest_level
+
+# Use normalized RNA data (Seurat v5+)
+data.input2 <- GetAssayData(seu.nonsmoker, assay = "RNA", layer = "data")
+
+cellchat2 <- createCellChat(
+  object = data.input2,
+  meta = meta2,
+  group.by = "celltype"
+)
+
+# set a ligand receptor db for human
+cellchat2@DB <- CellChatDB.human  
+
+cellchat2 <- subsetData(cellchat2)                 # subset expressed genes
+cellchat2 <- identifyOverExpressedGenes(cellchat2)
+cellchat2 <- identifyOverExpressedInteractions(cellchat2)
+
+#compute cell-cell communication
+cellchat2 <- computeCommunProb(cellchat2)
+cellchat2 <- filterCommunication(cellchat2, min.cells = 10)  # remove rare interactions
+cellchat2 <- computeCommunProbPathway(cellchat2)
+cellchat2 <- aggregateNet(cellchat2)
+
+# Overall number of interactions
+netVisual_circle(cellchat2@net$count, vertex.weight = as.numeric(table(cellchat2@idents)), weight.scale = TRUE, label.edge = FALSE)
+
+# Interaction strength
+netVisual_circle(cellchat2@net$weight, vertex.weight = as.numeric(table(cellchat2@idents)), weight.scale = TRUE)
+
+```
+
+
+```{r B cell in NS}
+#only choose B cells as senders and recievers
+
+# See all interactions
+head(cellchat2@net$weight)  # or subsetCommunication(cellchat)
+
+# Filter communication involving B cells
+bcell_interactions_ns <- subsetCommunication(
+  cellchat2,
+  sources.use = "B cells",   # use exact label from step 1
+  targets.use = NULL
+)
+
+#check what cell types are there in interaction
+unique(c(bcell_interactions_ns$source, bcell_interactions_ns$target))
+
+# Suppose your Seurat cell type column is "predicted.ann_finest_level"
+cells_to_keep4 <- colnames(seu.nonsmoker)[
+  seu.nonsmoker@meta.data$predicted.ann_finest_level %in% unique(c(bcell_interactions_ns$source, bcell_interactions_ns$target))
+]
+
+length(cells_to_keep4)  # should now be >0
+
+data_subset4 <- data.input2[, cells_to_keep4, drop = FALSE]
+meta_subset4 <- seu.nonsmoker@meta.data[cells_to_keep4, , drop = FALSE]
+
+dim(data_subset4)  # genes x cells
+
+#make a B cell specific cellchat object
+cellchat_b_ns <- createCellChat(
+  object = data_subset4,
+  meta = meta_subset4,
+  group.by = "predicted.ann_finest_level"  # your cell type column
+)
+
+cellchat_b_ns@DB <- CellChatDB.human  
+
+# Subset expressed genes and interactions
+cellchat_b_ns <- subsetData(cellchat_b_ns)
+
+# Identify over-expressed genes and interactions
+cellchat_b_ns <- identifyOverExpressedGenes(cellchat_b_ns)
+cellchat_b_ns <- identifyOverExpressedInteractions(cellchat_b_ns)
+
+# Compute probabilities of communication
+cellchat_b_ns <- computeCommunProb(cellchat_b_ns)
+
+# Optional: filter out rare interactions
+cellchat_b_ns <- filterCommunication(cellchat_b_ns, min.cells = 10)
+
+# Compute signaling pathway-level communication
+cellchat_b_ns <- computeCommunProbPathway(cellchat_b_ns)
+
+# Aggregate the network
+cellchat_b_ns <- aggregateNet(cellchat_b_ns)
+
+#circle plot with number of interactions
+
+netVisual_circle(
+  cellchat_b_ns@net$count,
+  vertex.weight = as.numeric(table(cellchat_b_ns@idents)),  # size proportional to number of cells
+  weight.scale = TRUE,
+  label.edge = FALSE
+)
+
+#circle plot with strength of interactions
+netVisual_circle(
+  cellchat_b_ns@net$weight,
+  vertex.weight = as.numeric(table(cellchat_b_ns@idents)),
+  weight.scale = TRUE
+)
+
+bcell_interactions_ns <- subsetCommunication(cellchat_b_ns)
+
+write.csv(
+  bcell_interactions_ns, 
+  "~/Desktop/Bcell_interactions_ns.csv", 
+  row.names = FALSE
+)
+
+```
+
+
+```{r save rds}
+
+saveRDS(cellchat2, file = "~/Desktop/cellchat_all_ns.rds")
+saveRDS(cellchat_b_ns, file = "~/Desktop/cellchat_bcell_ns.rds")
+
+```
+
+
+```{r Plot final graphs}
+
+#plot for ns
+cells.use.ns <- c("B cells", "AT2", "Transitional Club-AT2", "CD4 T cells", "CD8 T cells", "Multiciliated (non-nasal)")
+#extract the interactions
+bcell_subset_ns <- subsetCommunication(
+  cellchat_b_ns,
+  sources.use = cells.use.ns,
+  targets.use = cells.use.ns
+)
+
+#Plot a circle plot
+netVisual_circle(
+  cellchat_b_ns@net$count[cells.use.ns, cells.use.ns],
+  vertex.weight = as.numeric(table(cellchat_b_ns@idents)[cells.use.ns]),
+  weight.scale = TRUE,
+  label.edge = FALSE
+)
+
+
+par(mar = c(2,2,2,2))
+par(family = "Times New Roman")
+
+#add interaction strength
+netVisual_circle(
+  cellchat_b_ns@net$weight[cells.use.ns, cells.use.ns],
+  vertex.weight = as.numeric(table(cellchat_b_ns@idents)[cells.use.ns]),
+  weight.scale = TRUE,
+  arrow.size = 0.6,
+  arrow.width = 1,
+  # Label formatting
+  vertex.label.cex = 1.4,
+  label.edge = FALSE,
+)
+
+#store the plots
+
+dev.off()  # close the device
+
+tiff("/Users/gagandeepkaur/Desktop/Cell_chat_ns.tiff",
+     width = 6, height = 6, units = "in", res = 300)
+par(mar = c(2,2,2,2))
+par(family = "Times New Roman")
+
+
+netVisual_circle(
+  cellchat_b_ns@net$weight[cells.use.ns, cells.use.ns],
+  vertex.weight = as.numeric(table(cellchat_b_ns@idents)[cells.use.ns]),
+  weight.scale = TRUE,
+  arrow.size = 0.6,
+  arrow.width = 1,
+  # Label formatting
+  vertex.label.cex = 1.4,
+  label.edge = FALSE,
+)
+
+dev.off()
+
+# Define your cell type of interest
+cell_type <- "B cells"
+targets <- c("AT2", "Transitional Club-AT2", "B cells", "CD4 T cells", "Multiciliated (non-nasal)")
+
+#ns
+bcell_interactions_ns <- subsetCommunication(
+  cellchat_b_ns,
+  sources.use = cell_type,
+  targets.use = targets 
+)
+bcell_interactions_ns <- bcell_interactions_ns[order(-bcell_interactions_ns$prob), ]
+head(bcell_interactions_ns, 5)  
+
+
+write.csv(
+  bcell_interactions_ns,
+  "~/Desktop/Bcell_sender_ns.csv",
+  row.names = FALSE
+)
+
+
+```
