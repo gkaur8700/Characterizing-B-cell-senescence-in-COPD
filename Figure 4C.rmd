@@ -5,10 +5,6 @@ date: "2026-02-25"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 ## R Markdown
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
@@ -25,9 +21,9 @@ library(dplyr)
 ## Read the up and downregulated gene list
 
 ```{r Read}
-up_genes <- read.csv("/Users/gagandeepkaur/Desktop/Figure 4C/Raw Input/upregulated_genes_Bcells_copd_vs_ns_Sen.csv")
+up_genes <- read.csv("/path_to_folder/upregulated_genes_Bcells_copd_vs_ns_Sen.csv")
 
-down_genes <- read.csv ("/Users/gagandeepkaur/Desktop/Figure 4C/Raw Input/downregulated_genes_Bcells_copd_vs_ns_Sen.csv")
+down_genes <- read.csv ("/path_to_folder/downregulated_genes_Bcells_copd_vs_ns_Sen.csv")
 ```
 
 #get entrez id of up/downregulated genes
@@ -76,8 +72,8 @@ ekegg_up <- as.data.frame(ekegg_up)
 
 head(ekegg_up)
 
-write.csv(ekegg_up, "/Users/gagandeepkaur/Desktop/Figure 4C/KEGG_enrichment_results_Sen_Bcells_up.csv", row.names = FALSE)
+write.csv(ekegg_up, "/path_to_folder/Figure 4C/KEGG_enrichment_results_Sen_Bcells_up.csv", row.names = FALSE)
 
-write.csv(ekegg_down, "/Users/gagandeepkaur/Desktop/Figure 4C/KEGG_enrichment_results_Sen_Bcells_down.csv", row.names = FALSE)
+write.csv(ekegg_down, "/path_to_folder/Figure 4C/KEGG_enrichment_results_Sen_Bcells_down.csv", row.names = FALSE)
 
 ```
