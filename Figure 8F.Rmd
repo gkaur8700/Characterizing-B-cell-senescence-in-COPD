@@ -1,0 +1,118 @@
+---
+title: "Figure 8F"
+author: "GK"
+date: "2026-02-25"
+output: html_document
+---
+
+```{r load libraries}
+library(biomaRt)
+library(org.Hs.eg.db)
+library(AnnotationDbi)
+library(clusterProfiler)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r read the files}
+at <- read.csv("/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/Figure 8D-E/Processed Files/Sig DEGs/copd_vs_ns_at2_sig.csv")
+mnn <- read.csv("/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/Figure 8D-E/Processed Files/Sig DEGs/copd_vs_ns_mnn_sig.csv")
+
+```
+
+```{r choose ensemble version}
+listEnsembl() 
+
+ensembl <- useEnsembl(biomart = "genes")
+datasets <- listDatasets(ensembl)
+
+Ensemble <- useDataset(dataset = "hsapiens_gene_ensembl", mart = ensembl)
+ensemble <- useEnsembl('ensembl', mirror = 'useast')
+
+attr <- listAttributes(Ensemble)
+Ensemble <- useEnsembl(biomart="genes", dataset = "hsapiens_gene_ensembl")
+
+
+```
+
+```{r up- and downregulated AT2 cells}
+
+#upregulated
+at.top <- at[at$log2FoldChange > 0.5,]
+at.top <- at.top[order(at.top$log2FoldChange, decreasing = TRUE),]
+
+Ensemble_ID_at <- getBM(mart = Ensemble, attributes = c('external_gene_name', 'ensembl_gene_id'), 
+                        filters = "external_gene_name",
+                        values = at.top$X
+)
+
+col1 <- Ensemble_ID_at$ensembl_gene_id
+GO_results1 <- enrichGO(gene = col1, OrgDb = "org.Hs.eg.db", keyType = "ENSEMBL", ont = "BP")
+
+edox1 <- setReadable(GO_results1, 'org.Hs.eg.db', 'ENSEMBL')
+head(edox1)
+fit1 <- plot(barplot(edox1, showCategory =10))
+write.csv(edox1, file = "/Users/gagandeepkaur/Desktop/copd_vs_ns_AT2_up_GOanalyses.csv")
+
+#Downregulated
+at.down <- at[at$log2FoldChange < -0.5,]
+at.down <- at.down[order(at.down$log2FoldChange, decreasing = FALSE),]
+
+Ensemble_ID_at_down <- getBM(mart = Ensemble, attributes = c('external_gene_name', 'ensembl_gene_id'), 
+                             filters = "external_gene_name",
+                             values = at.down$X
+)
+
+col2 <- Ensemble_ID_at_down$ensembl_gene_id
+
+GO_results2 <- enrichGO(gene = col2, OrgDb = "org.Hs.eg.db", keyType = "ENSEMBL", ont = "BP")
+
+edox2 <- setReadable(GO_results2, 'org.Hs.eg.db', 'ENSEMBL')
+head(edox2)
+fit2 <- plot(barplot(edox2, showCategory =10))
+write.csv(edox2, file = "/Users/gagandeepkaur/Desktop/copd_vs_ns_AT2_down_GOanalyses.csv")
+
+```
+
+
+```{r up- and downregulated genes in MNN}
+#upregulated
+mnn.top <- mnn[mnn$log2FoldChange > 0.5,]
+mnn.top <- mnn.top[order(mnn.top$log2FoldChange, decreasing = TRUE),]
+
+Ensemble_ID_mnn <- getBM(mart = Ensemble, attributes = c('external_gene_name', 'ensembl_gene_id'), 
+                         filters = "external_gene_name",
+                         values = mnn.top$X
+)
+
+col3 <- Ensemble_ID_mnn$ensembl_gene_id
+GO_results3 <- enrichGO(gene = col3, OrgDb = "org.Hs.eg.db", keyType = "ENSEMBL", ont = "BP")
+
+edox3 <- setReadable(GO_results3, 'org.Hs.eg.db', 'ENSEMBL')
+head(edox3)
+fit3 <- plot(barplot(edox3, showCategory =10))
+write.csv(edox3, file = "/Users/gagandeepkaur/Desktop/copd_vs_ns_MNN_up_GOanalyses.csv")
+
+#Downregulated
+mnn.down <- mnn[mnn$log2FoldChange < -0.5,]
+mnn.down <- mnn.down[order(mnn.down$log2FoldChange, decreasing = FALSE),]
+
+Ensemble_ID_mnn_down <- getBM(mart = Ensemble, attributes = c('external_gene_name', 'ensembl_gene_id'), 
+                              filters = "external_gene_name",
+                              values = mnn.down$X
+)
+
+col4 <- Ensemble_ID_mnn_down$ensembl_gene_id
+GO_results4 <- enrichGO(gene = col4, OrgDb = "org.Hs.eg.db", keyType = "ENSEMBL", ont = "BP")
+
+edox4 <- setReadable(GO_results4, 'org.Hs.eg.db', 'ENSEMBL')
+head(edox4)
+fit4 <- plot(barplot(edox4, showCategory =10))
+write.csv(edox4, file = "/Users/gagandeepkaur/Desktop/copd_vs_ns_MNN_down_GOanalyses.csv")
+
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
