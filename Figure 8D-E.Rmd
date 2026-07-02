@@ -21,7 +21,7 @@ library(DESeq2)
 
 ```{r Load the integrated file}
 
-data <- readRDS("/Volumes/My Passport/Final Data/HarmonyIntegrated_annotated_data_final.rds")
+data <- readRDS("/path_to_folder/HarmonyIntegrated_annotated_data_final.rds")
 
 # filter
 #change filter conditions based on the file
@@ -113,20 +113,20 @@ mnn_dds <- DESeq(mnn_dds)
 res01 <- results(mnn_dds, name = "condition_copd_vs_nonsmoker")
 summary(res01)
 
-write.csv(as.data.frame(res01), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_ns_mnn.csv")
-saveRDS(res01, "/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_ns_mnn.rds")
+write.csv(as.data.frame(res01), file="/path_to_folder/Figure 8/copd_vs_ns_mnn.csv")
+saveRDS(res01, "/path_to_folder/Figure 8/copd_vs_ns_mnn.rds")
 
 Sig_res01 <- subset(res01, padj < 0.05)
 summary(Sig_res01)
 head(Sig_res01)
-write.csv(as.data.frame(Sig_res01), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_ns_mnn_sig.csv")
+write.csv(as.data.frame(Sig_res01), file="/path_to_folder/Figure 8/copd_vs_ns_mnn_sig.csv")
 
 
 res02 <- results(mnn_dds, name = "condition_smoker_vs_nonsmoker")
 summary(res02)
 
-saveRDS(res02, "/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sm_vs_ns_mnn.rds")
-write.csv(as.data.frame(res02), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sm_vs_ns_mnn.csv")
+saveRDS(res02, "/path_to_folder/Figure 8/sm_vs_ns_mnn.rds")
+write.csv(as.data.frame(res02), file="/path_to_folder/Figure 8/sm_vs_ns_mnn.csv")
 
 # Set factor level to smoker
 mnn_coldata$condition <- relevel(mnn_coldata$condition, ref = "smoker") 
@@ -149,10 +149,10 @@ mnn_dds_1 <- DESeq(mnn_dds_1)
 res03 <- results(mnn_dds_1, name = "condition_copd_vs_smoker")
 summary(res03)
 
-write.csv(as.data.frame(res03), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_sm_mnn.csv")
-saveRDS(res03, "/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_sm_mnn.rds")
+write.csv(as.data.frame(res03), file="/path_to_folder/Figure 8/copd_vs_sm_mnn.csv")
+saveRDS(res03, "/path_to_folder/Figure 8/copd_vs_sm_mnn.rds")
 
-write.csv(as.data.frame(counts_mnn), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/counts_mnn.csv")
+write.csv(as.data.frame(counts_mnn), file="/path_to_folder/Figure 8/counts_mnn.csv")
 
 ```
 
@@ -188,24 +188,24 @@ at_dds <- DESeq(at_dds)
 res21 <- results(at_dds, name = "condition_copd_vs_nonsmoker")
 summary(res21)
 
-write.csv(as.data.frame(res21), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_ns_at2.csv")
-saveRDS(res21, "/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_ns_at2.rds")
+write.csv(as.data.frame(res21), file="/path_to_folder/Figure 8/copd_vs_ns_at2.csv")
+saveRDS(res21, "/path_to_folder/Figure 8/copd_vs_ns_at2.rds")
 
 Sig_res21 <- subset(res21, padj < 0.05)
 summary(Sig_res21)
 head(Sig_res21)
-write.csv(as.data.frame(Sig_res21), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_ns_at2_sig.csv")
+write.csv(as.data.frame(Sig_res21), file="/path_to_folder/Figure 8/copd_vs_ns_at2_sig.csv")
 
 
 res22 <- results(at_dds, name = "condition_smoker_vs_nonsmoker")
 summary(res22)
 
-saveRDS(res22, "/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sm_vs_ns_at2.rds")
-write.csv(as.data.frame(res22), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sm_vs_ns_at2.csv")
+saveRDS(res22, "/path_to_folder/Figure 8/sm_vs_ns_at2.rds")
+write.csv(as.data.frame(res22), file="/path_to_folder/Figure 8/sm_vs_ns_at2.csv")
 
 Sig_res22 <- subset(res22, padj < 0.05)
 summary(Sig_res22)
-write.csv(as.data.frame(Sig_res22), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sm_vs_ns_at2_sig.csv")
+write.csv(as.data.frame(Sig_res22), file="/path_to_folder/Figure 8/sm_vs_ns_at2_sig.csv")
 
 # Set factor level to smoker
 at_coldata$condition <- relevel(at_coldata$condition, ref = "smoker") 
@@ -228,10 +228,10 @@ at_dds_1 <- DESeq(at_dds_1)
 res23 <- results(at_dds_1, name = "condition_copd_vs_smoker")
 summary(res23)
 
-write.csv(as.data.frame(res23), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_sm_at2.csv")
-saveRDS(res23, "/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/copd_vs_sm_at2.rds")
+write.csv(as.data.frame(res23), file="/path_to_folder/Figure 8/copd_vs_sm_at2.csv")
+saveRDS(res23, "/path_to_folder/Figure 8/copd_vs_sm_at2.rds")
 
-write.csv(as.data.frame(counts_at), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/counts_at2.csv")
+write.csv(as.data.frame(counts_at), file="/path_to_folder/Figure 8/counts_at2.csv")
 
 ```
 
@@ -248,7 +248,7 @@ mat1.z <- t(apply(mat_1, 1, scale))
 colnames(mat1.z) <- rownames(mnn_coldata)
 head(mat1.z)
 
-write.csv(as.data.frame(mat1.z), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sig_Zscore_copd_vs_ns_mnn.csv")
+write.csv(as.data.frame(mat1.z), file="/path_to_folder/Figure 8/sig_Zscore_copd_vs_ns_mnn.csv")
 
 #AT2 (COPD vs NS)
 
@@ -260,9 +260,9 @@ colnames(mat4.z) <- rownames(at_coldata)
 
 head(mat4.z)
 
-write.csv(as.data.frame(mat4.z), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sig_Zscore_copd_vs_ns_at2.csv")
+write.csv(as.data.frame(mat4.z), file="/path_to_folder/Figure 8/sig_Zscore_copd_vs_ns_at2.csv")
 
-write.csv(as.data.frame(mat_4), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sig_counts_copd_vs_ns_at2.csv")
+write.csv(as.data.frame(mat_4), file="/path_to_folder/Figure 8/sig_counts_copd_vs_ns_at2.csv")
 
 #AT2 (Sm vs NS)
 
@@ -273,21 +273,8 @@ mat5.z <- t(apply(mat_5, 1, scale))
 colnames(mat5.z) <- rownames(at_coldata)
 
 head(mat5.z)
-write.csv(as.data.frame(mat5.z), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sig_Zscore_sm_vs_ns_at2.csv")
+write.csv(as.data.frame(mat5.z), file="/path_to_folder/Figure 8/sig_Zscore_sm_vs_ns_at2.csv")
 
-write.csv(as.data.frame(mat_5), file="/Users/gagandeepkaur/Desktop/COPD Paper - Revision 2/Figure 8/sig_counts_sm_vs_ns_at2.csv")
-
-
+write.csv(as.data.frame(mat_5), file="/path_to_folder/Figure 8/sig_counts_sm_vs_ns_at2.csv")
 
 ```
-
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
