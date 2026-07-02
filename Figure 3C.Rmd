@@ -20,22 +20,8 @@ When you click the **Knit** button a document will be generated that includes bo
 library(Seurat) 
 library(ggplot2)
 library(tidyverse)
-library(ggrepel)
-library(patchwork)
-library(cowplot)
-library(viridis)
-library(BiocManager)
-library(textshaping)
-#library(RCurl)
-library(RColorBrewer)
-library(ggpubr)
-library(sctransform)
-#library(ExperimentHub) #Bioconductor Install
-library(scuttle) #Bioconductor Install
-library(SingleR) #Bioconductor Install
-library(writexl)
 
-annotated_data <- readRDS("/Volumes/My Passport/Final Data/HarmonyIntegrated_annotated_data_final.rds")
+annotated_data <- readRDS("/path_to_folder/HarmonyIntegrated_annotated_data_final.rds")
 
 # Subset for NS and COPD
 subset_obj <- subset(annotated_data, subset = orig.ident %in% c("nonsmoker", "COPD"))
@@ -57,12 +43,9 @@ subset1 <- DimPlot(subset_obj, reduction = "umap", group.by = "orig.ident", cols
 
 print(subset1)
 
-ggsave(subset1, filename = '/Users/gagandeepkaur/Desktop/COPD paper/copd_vs_ns.tiff', width = 6, height =6)
-
 #COPD vs Sm
 subset2 <- DimPlot(subset_obj_1, reduction = "umap", group.by = "orig.ident", cols = c("#F8766D", "#b0b0b04D"), pt.size = 0.001)
 
-ggsave(subset2, filename = '/Users/gagandeepkaur/Desktop/COPD paper/copd_vs_sm.tiff', width = 6, height =6)
+print(subset2)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
