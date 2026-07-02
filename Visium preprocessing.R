@@ -113,17 +113,6 @@ data <- RenameIdents(data, new_cluster_names)
 
 Idents(data)
 
-#Calculate cluster frequencies
+saveRDS(data, "/path_to_folder/All_merged_after_integration_annotated.rds")
 
-data$seurat_clusters <- Idents(data)
-
-# Create frequency table
-freq_table <- table(data$sample, data$seurat_clusters)
-freq_df <- as.data.frame(freq_table)
-colnames(freq_df) <- c("Sample", "Cluster", "Cell_Count")
-
-freq_df <- freq_df %>%
-  group_by(Sample) %>%
-  mutate(Proportion = Cell_Count / sum(Cell_Count))
-
-write.csv(freq_df, file = "/path_to_folder/cell_frequency_visium.csv", row.names = FALSE)
+```
