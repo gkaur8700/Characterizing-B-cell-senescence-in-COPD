@@ -17,7 +17,7 @@ library(dplyr)
 library(ggplot2)
 
 #read the rds
-data <- readRDS("/...path_to_folder/All_merged_after_annotation.rds")
+data <- readRDS("/...path_to_folder/All_merged_after_integration_annotated.rds")
 
 
 
