@@ -1,0 +1,227 @@
+---
+title: "Figure 4B"
+author: "GK"
+date: "2026-05-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r B cell subset}
+
+library(Seurat) 
+library(ggplot2)
+library(tidyverse)
+library(writexl)
+library(dplyr)
+
+#read the .rds file
+data <- readRDS("/Volumes/My Passport/Final Data/HarmonyIntegrated_annotated_data_final.rds")
+
+data$CellTypes <- Idents(data)
+
+#Subset B cell cluster
+bcell <- subset(data, idents = c("B cells"))
+
+#Save this file
+saveRDS(bcell, file = "/Users/gagandeepkaur/Desktop/Figure 4B/bcell.rds")
+```
+
+## Read the senescence -associated geneset
+
+```{r senescence-associated geneset }
+# Read the identified senescence associated geneset
+genes <- read.csv("/Users/gagandeepkaur/Desktop/Figure 4B/Raw Data/B cell senescence_genes.csv")
+
+# Read the column called "gene"
+gene_list <- genes$gene
+```
+
+#Extract the counts info
+
+```{r Extract normalized expression across samples}
+
+# Get normalized data
+expr <- GetAssayData(
+  bcell,
+  assay = "RNA",
+  layer = "data"
+)
+
+# Keep genes present
+genes <- intersect(gene_list, rownames(expr))
+
+# Metadata
+meta <- bcell@meta.data
+
+meta$group <- paste(
+  meta$CellTypes,
+  meta$sample,
+  sep = "_"
+)
+
+unique(meta$group)
+
+expr <- GetAssayData(
+  bcell,
+  assay = "RNA",
+  layer = "data"
+)
+
+genes <- intersect(gene_list, rownames(expr))
+
+avg_expr <- sapply(unique(meta$group), function(g) {
+
+  cells <- rownames(meta)[meta$group == g]
+
+  rowMeans(expr[genes, cells, drop = FALSE])
+
+})
+
+final_table <- as.data.frame(t(avg_expr))
+
+final_table$group <- rownames(final_table)
+
+#reorder the file
+final_table$cluster <- sub("_(.*)", "", final_table$group)
+
+final_table$sample <- sub("(.*)_", "", final_table$group)
+
+final_table <- final_table[, c(
+  "cluster",
+  "sample",
+  genes
+)]
+
+head(final_table)
+
+#Write the final table
+write.csv(final_table, "/Users/gagandeepkaur/Desktop/Figure 4B/bcell_senescence_gene_expression.csv",
+          row.names = FALSE)
+
+```
+
+
+```{r add the group column}
+
+final_table$group <- case_when(
+  grepl("^NS", final_table$sample) ~ "NS",
+  grepl("^Sm", final_table$sample) ~ "Sm",
+  grepl("^C",  final_table$sample) ~ "C",
+  TRUE ~ "Other"
+)
+
+
+write.csv(
+  final_table,
+  "/Users/gagandeepkaur/Desktop/Figure 4B/Bcell_sample_expression_grouped.csv",
+  row.names = FALSE
+)
+
+```
+
+
+```{r identify log2FC between COPD vs NS}
+
+#Subset the results
+
+ns <- subset(final_table, group == "NS")
+copd <- subset(final_table, group == "C")
+sm <- subset(final_table, group == "Sm")
+
+
+gene_cols <- setdiff(colnames(final_table), c("cluster","sample","group"))
+
+ns_mean   <- colMeans(ns[, gene_cols])
+copd_mean <- colMeans(copd[, gene_cols])
+
+#Calculate log2 FC- COPD vs NS
+log2FC <- log2(copd_mean + 1e-6) -
+          log2(ns_mean + 1e-6)
+
+#Wilcoxan test
+genes <- colnames(final_table)[4:ncol(final_table)]
+data_sub <- subset(final_table, group %in% c("NS", "C"))
+
+genes <- setdiff(colnames(final_table), c("cluster","sample","group"))
+
+pvals <- sapply(genes, function(gene) {
+
+  wilcox.test(
+    data_sub[[gene]][data_sub$group == "C"],
+    data_sub[[gene]][data_sub$group == "NS"], 
+    exact = FALSE
+  )$p.value
+
+})
+
+
+#p adj value
+padj <- p.adjust(pvals, method = "BH")
+
+#Combine results
+
+results <- data.frame(
+  gene = genes,
+  log2FC = log2FC,
+  pvalue = pvals,
+  padj = padj
+)
+
+
+padj_cutoff <- 1.1
+
+upregulated <- subset(results, log2FC > 1.5)
+up_genes <- upregulated$gene
+
+head(upregulated)
+
+downregulated <- subset(results, log2FC < -1.5)
+down_genes <- downregulated$gene
+
+head(downregulated)
+
+write.csv(results, "/Users/gagandeepkaur/Desktop/Figure 4B/B_cell_senescence_fold_change_scRNA_results.csv")
+
+write.csv(upregulated, "/Users/gagandeepkaur/Desktop/Figure 4B/upregulated_genes_Bcells_copd_vs_ns_Sen.csv", row.names = FALSE)
+
+write.csv(downregulated, "/Users/gagandeepkaur/Desktop/Figure 4B/downregulated_genes_Bcells_copd_vs_ns_Sen.csv", row.names = FALSE)
+
+```
+
+```{r get the z-scored expression for plotting}
+#subset the expression data per sample
+expr_up <- final_table[, up_genes]
+expr_down <- final_table[, down_genes]
+
+#compute Z score for both
+
+z_up <- scale(expr_up) 
+z_down <- scale(expr_down)
+
+
+z_up_df <- cbind(final_table[, c("sample")], z_up)
+z_down_df <- cbind(final_table[, c("sample")], z_down)
+
+z_up_df <- t(z_up_df)
+z_down_df <- t(z_down_df)
+
+
+Sig_Sen_genes_B_cells <- rbind(z_up_df, z_down_df)
+
+head(Sig_Sen_genes_B_cells)
+
+write.csv(Sig_Sen_genes_B_cells, "/Users/gagandeepkaur/Desktop/Figure 4B/Zscore_sig_DEGs_Bcells_Sen_20260225.csv", row.names = TRUE)
+
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
