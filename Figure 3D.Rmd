@@ -1,0 +1,865 @@
+---
+title: "Figure 3D"
+author: "GK"
+date: "2024-07-06"
+output: html_document
+---
+
+```{r libraries, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r DESeq2}
+library(Seurat) 
+library(ggplot2)
+library(tidyverse)
+library(writexl)
+library(DESeq2)
+
+#read the .rds file
+data <- readRDS("/Volumes/My Passport/Final Data/HarmonyIntegrated_annotated_data_final.rds")
+
+data$CellTypes <- Idents(data)
+
+#filter
+#change filter conditions based on the file
+seu.filtered <- subset(data, subset = nFeature_RNA > 200 &
+                         nCount_RNA > 800 & 
+                         percent.mt < 5 
+)
+
+# run Seurat's standard workflow steps
+seu.filtered <- NormalizeData(seu.filtered)
+seu.filtered <- FindVariableFeatures(seu.filtered)
+seu.filtered <- ScaleData(seu.filtered)
+seu.filtered <- RunPCA(seu.filtered)
+ElbowPlot(seu.filtered)
+seu.filtered <- RunUMAP(seu.filtered, dims = 1:20)
+
+p1 <- DimPlot(seu.filtered, reduction = "umap", label = TRUE, label.size = 5)
+
+# pseudo-bulk workflow -----------------
+# Acquiring necessary metrics for aggregation across cells in a sample
+# 1. counts matrix - sample level
+# counts aggregate to sample level
+#see if we need to do this 
+
+seu.filtered$samples <- paste0(seu.filtered$orig.ident, seu.filtered$CellTypes)
+
+cts <- AggregateExpression(seu.filtered, 
+                           group.by = c("CellTypes", "sample"),
+                           assays = 'RNA',
+                           slot = "counts",
+                           return.seurat = FALSE)
+
+cts <- cts$RNA
+
+# transpose
+cts.t <- t(cts)
+
+# convert to data.frame
+cts.t <- as.data.frame(cts.t)
+
+# get values where to split
+splitRows <- gsub('_.*', '', rownames(cts.t))
+
+# split data.frame
+cts.split <- split.data.frame(cts.t,
+                              f = factor(splitRows))
+
+# fix colnames and transpose
+cts.split.modified <- lapply(cts.split, function(x){
+  rownames(x) <- gsub('.*_(.*)_', '\\1', rownames(x))
+  t(x)
+})
+
+```
+
+## DESeq2 for AT2
+
+You can also embed plots, for example:
+
+```{r AT2}
+# Let's run DE analysis with AT2
+# 1. Get counts matrix
+counts_at2 <- cts.split.modified$`AT2`
+
+#2 generate sample level metadata - do it for each "control" sample vs "treated" sample   
+
+condition <- factor(c("copd", "copd", "copd", "copd", "copd", "nonsmoker", "nonsmoker", "nonsmoker", "nonsmoker", "smoker", "smoker", "smoker", "smoker"))
+
+at2_coldata <- data.frame(row.names = colnames(counts_at2), condition)
+
+# Set factor level
+at2_coldata$condition <- relevel(at2_coldata$condition, ref = "nonsmoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+at2_dds <- DESeqDataSetFromMatrix(countData = counts_at2,
+                                  colData = at2_coldata,
+                                  design = ~ condition)
+
+# filter
+keep <- rowSums(counts(at2_dds)) >=10
+at2_dds <- at2_dds[keep,]
+
+# run DESeq2
+at2_dds <- DESeq(at2_dds)
+
+# Generate results object 
+res1 <- results(at2_dds, name = "condition_copd_vs_nonsmoker")
+summary(res1)
+
+res2 <- results(at2_dds, name = "condition_smoker_vs_nonsmoker")
+summary(res2)
+
+#Generate the significant gene
+
+Sig_res1 <- subset(res1, padj < 0.05)
+summary(Sig_res1)
+
+Sig_res2 <- subset(res2, padj < 0.05)
+summary(Sig_res2)
+
+# Set factor level to smoker
+at2_coldata$condition <- relevel(at2_coldata$condition, ref = "smoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+at2_dds_1 <- DESeqDataSetFromMatrix(countData = counts2_at,
+                                   colData = at2_coldata,
+                                   design = ~ condition)
+
+
+# filter
+keep <- rowSums(counts(at2_dds_1)) >=10
+at2_dds_1 <- at2_dds_1[keep,]
+
+# run DESeq2
+at2_dds_1 <- DESeq(at2_dds_1)
+
+# Generate results object
+res3 <- results(at2_dds_1, name = "condition_copd_vs_smoker")
+summary(res3)
+
+```
+
+#DESeq2 for MNN
+
+```{r MNN}
+# Let's run DE analysis with Multiciliated
+# 1. Get counts matrix
+counts_mnn <- cts.split.modified$`Multiciliated (non-nasal)`
+
+#2 generate sample level metadata - do it for each "control" sample vs "treated" sample   
+
+condition <- factor(c("copd", "copd", "copd", "copd", "copd", "nonsmoker", "nonsmoker", "nonsmoker", "smoker", "smoker", "smoker"))
+
+mnn_coldata <- data.frame(row.names = colnames(counts_mnn), condition)
+
+# Set factor level
+mnn_coldata$condition <- relevel(mnn_coldata$condition, ref = "nonsmoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+mnn_dds <- DESeqDataSetFromMatrix(countData = counts_mnn,
+                                  colData = mnn_coldata,
+                                  design = ~ condition)
+
+# filter
+keep <- rowSums(counts(mnn_dds)) >=10
+mnn_dds <- mnn_dds[keep,]
+
+# run DESeq2
+mnn_dds <- DESeq(mnn_dds)
+
+# Generate results object
+res4 <- results(mnn_dds, name = "condition_copd_vs_nonsmoker")
+summary(res4)
+
+Sig_res4 <- subset(res4, padj < 0.05)
+summary(Sig_res4)
+
+res5 <- results(mnn_dds, name = "condition_smoker_vs_nonsmoker")
+summary(res5)
+
+# Set factor level to smoker
+mnn_coldata$condition <- relevel(mnn_coldata$condition, ref = "smoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+mnn_dds_1 <- DESeqDataSetFromMatrix(countData = counts_mnn,
+                                    colData = mnn_coldata,
+                                    design = ~ condition)
+
+
+# filter
+keep <- rowSums(counts(mnn_dds_1)) >=10
+mnn_dds_1 <- mnn_dds_1[keep,]
+
+# run DESeq2
+mnn_dds_1 <- DESeq(mnn_dds_1)
+
+# Generate results object
+res6 <- results(mnn_dds_1, name = "condition_copd_vs_smoker")
+summary(res6)
+
+```
+
+#DESeq2 for Alveolar macrophages
+
+```{r }
+# Let's run DE analysis with AM
+# 1. Get counts matrix
+
+counts_am <- cts.split.modified$`Alveolar macrophage`
+
+#2 generate sample level metadata - do it for each "control" sample vs "treated" sample   
+
+condition <- factor(c("copd", "copd", "copd", "copd", "copd", "nonsmoker", "nonsmoker", "nonsmoker", "nonsmoker", "smoker", "smoker", 
+                      "smoker"))
+
+am_coldata <- data.frame(row.names = colnames(counts_am), condition)
+
+# Set factor level
+am_coldata$condition <- relevel(am_coldata$condition, ref = "nonsmoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+am_dds <- DESeqDataSetFromMatrix(countData = counts_am,
+                                colData = am_coldata,
+                                design = ~ condition)
+
+
+# filter
+keep <- rowSums(counts(am_dds)) >=10
+am_dds <- am_dds[keep,]
+
+# run DESeq2
+am_dds <- DESeq(am_dds)
+
+# Generate results object
+res7 <- results(am_dds, name = "condition_copd_vs_nonsmoker")
+summary(res7)
+
+#significant genes
+Sig_res7 <- subset(res7, padj < 0.05)
+summary(Sig_res7)
+
+
+res8 <- results(am_dds, name = "condition_smoker_vs_nonsmoker")
+summary(res8)
+
+#significant genes
+Sig_res8 <- subset(res8, padj < 0.05)
+summary(Sig_res8)
+
+# Set factor level to smoker
+am_coldata$condition <- relevel(am_coldata$condition, ref = "smoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+am_dds_1 <- DESeqDataSetFromMatrix(countData = counts_am,
+                                  colData = am_coldata,
+                                  design = ~ condition)
+
+
+# filter
+keep <- rowSums(counts(am_dds_1)) >=10
+am_dds_1 <- am_dds_1[keep,]
+
+# run DESeq2
+am_dds_1 <- DESeq(am_dds_1)
+
+# Generate results object
+res9 <- results(am_dds_1, name = "condition_copd_vs_smoker")
+summary(res9)
+
+#significant genes
+Sig_res9 <- subset(res9, padj < 0.05)
+summary(Sig_res9)
+
+```
+
+#DESeq2 for B cells
+```{r B cells}
+
+#B CELLS
+
+# Let's run DE analysis with B cells
+# 1. Get counts matrix
+counts_b <- cts.split.modified$`B cells`
+
+#2 generate sample level metadata - do it for each "control" sample vs "treated" sample   
+
+counts.t <- t(counts_b)
+counts.t <- as.data.frame(cts.t)
+condition <- factor(c("copd", "copd", "copd", "copd", "nonsmoker","nonsmoker", "nonsmoker", "nonsmoker", "smoker", "smoker", "smoker"))
+b_coldata <- data.frame(row.names = colnames(counts_b), condition)
+
+# Set factor level
+b_coldata$condition <- relevel(b_coldata$condition, ref = "nonsmoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+b_dds <- DESeqDataSetFromMatrix(countData = counts_b,
+                                colData = b_coldata,
+                                design = ~ condition)
+
+
+# filter
+keep <- rowSums(counts(b_dds)) >=10
+b_dds <- b_dds[keep,]
+
+# run DESeq2
+b_dds <- DESeq(b_dds)
+
+# Check the coefficients for the comparison
+resultsNames(b_dds)
+
+# Generate results object
+res10 <- results(b_dds, name = "condition_copd_vs_nonsmoker")
+summary(res10)
+
+#Significantly differentially regulated
+Sig_res10 <- subset(res10, padj < 0.05)
+summary(Sig_res10)
+
+res11 <- results(b_dds, name = "condition_smoker_vs_nonsmoker")
+summary(res11)
+
+# Set factor level to smoker
+b_coldata$condition <- relevel(b_coldata$condition, ref = "smoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+b_dds_1 <- DESeqDataSetFromMatrix(countData = counts_b,
+                                   colData = b_coldata,
+                                   design = ~ condition)
+
+# filter
+keep <- rowSums(counts(b_dds_1)) >=10
+b_dds_1 <- b_dds_1[keep,]
+
+# run DESeq2
+b_dds_1 <- DESeq(b_dds_1)
+
+# Generate results object
+res12 <- results(b_dds_1, name = "condition_copd_vs_smoker")
+summary(res12)
+
+#Significantly differentially regulated
+Sig_res12 <- subset(res12, padj < 0.05)
+summary(Sig_res12)
+
+```
+
+#DESeq2 for CD4 cells
+```{r CD4 T cells}
+#CD4 T cells
+
+# Let's run DE analysis with CD4 T cells
+# 1. Get counts matrix
+counts_t4 <- cts.split.modified$`CD4 T cells`
+
+#2 generate sample level metadata - do it for each "control" sample vs "treated" sample   
+
+counts.t <- t(counts_t4)
+counts.t <- as.data.frame(cts.t)
+condition <- factor(c("copd", "copd","copd", "copd", "nonsmoker","nonsmoker","nonsmoker","nonsmoker", "smoker", "smoker","smoker"))
+t4_coldata <- data.frame(row.names = colnames(counts_t4), condition)
+
+# Set factor level
+t4_coldata$condition <- relevel(t4_coldata$condition, ref = "nonsmoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+t4_dds <- DESeqDataSetFromMatrix(countData = counts_t4,
+                                 colData = t4_coldata,
+                                 design = ~ condition)
+
+
+# filter
+keep <- rowSums(counts(t4_dds)) >=10
+t4_dds <- t4_dds[keep,]
+
+# run DESeq2
+t4_dds <- DESeq(t4_dds)
+
+# Check the coefficients for the comparison
+resultsNames(t4_dds)
+
+# Generate results object
+res13 <- results(t4_dds, name = "condition_copd_vs_nonsmoker")
+summary(res13)
+
+#Significant differentially regulated
+Sig_res13 <- subset(res13, padj < 0.05)
+summary(Sig_res13)
+
+res14 <- results(t4_dds, name = "condition_smoker_vs_nonsmoker")
+summary(res14)
+
+# Set factor level to smoker
+t4_coldata$condition <- relevel(t4_coldata$condition, ref = "smoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+t4_dds_1 <- DESeqDataSetFromMatrix(countData = counts_t4,
+                                   colData = t4_coldata,
+                                   design = ~ condition)
+
+# filter
+keep <- rowSums(counts(t4_dds_1)) >=10
+t4_dds_1 <- t4_dds_1[keep,]
+
+# run DESeq2
+t4_dds_1 <- DESeq(t4_dds_1)
+
+# Generate results object
+res15 <- results(t4_dds_1, name = "condition_copd_vs_smoker")
+summary(res15)
+
+#Significantly differentially regulated
+Sig_res15 <- subset(res15, padj < 0.05)
+```
+
+#DESeq2 for CD8 T cells
+```{r CD8 T cells}
+# CD8 T CELLS
+
+# Let's run DE analysis with CD8 T cells
+# 1. Get counts matrix
+counts_t8 <- cts.split.modified$`CD8 T cells`
+
+#2 generate sample level metadata - do it for each "control" sample vs "treated" sample   
+
+counts.t <- t(counts_t8)
+counts.t <- as.data.frame(cts.t)
+condition <- factor(c("copd", "copd","copd", "copd", "nonsmoker","nonsmoker","nonsmoker","nonsmoker", "smoker", "smoker","smoker", "smoker"))
+t8_coldata <- data.frame(row.names = colnames(counts_t8), condition)
+
+# Set factor level
+t8_coldata$condition <- relevel(t8_coldata$condition, ref = "nonsmoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+t8_dds <- DESeqDataSetFromMatrix(countData = counts_t8,
+                                 colData = t8_coldata,
+                                 design = ~ condition)
+
+
+# filter
+keep <- rowSums(counts(t8_dds)) >=10
+t8_dds <- t8_dds[keep,]
+
+# run DESeq2
+t8_dds <- DESeq(t8_dds)
+
+# Check the coefficients for the comparison
+resultsNames(t8_dds)
+
+# Generate results object
+res16 <- results(t8_dds, name = "condition_copd_vs_nonsmoker")
+summary(res16)
+
+#Significant differentially regulated
+Sig_res16 <- subset(res16, padj < 0.05)
+summary(Sig_res16)
+
+res17 <- results(t8_dds, name = "condition_smoker_vs_nonsmoker")
+summary(res17)
+
+# Set factor level to smoker
+t8_coldata$condition <- relevel(t8_coldata$condition, ref = "smoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+t8_dds_1 <- DESeqDataSetFromMatrix(countData = counts_t8,
+                                   colData = t8_coldata,
+                                   design = ~ condition)
+
+# filter
+keep <- rowSums(counts(t8_dds_1)) >=10
+t8_dds_1 <- t8_dds_1[keep,]
+
+# run DESeq2
+t8_dds_1 <- DESeq(t8_dds_1)
+
+# Generate results object
+res18 <- results(t8_dds_1, name = "condition_copd_vs_smoker")
+summary(res18)
+
+```
+
+#DESeq2 for Classical Monocytes
+```{r CM}
+# Let's run DE analysis with classical monocytes
+# 1. Get counts matrix
+counts_cm  <- cts.split.modified$`Classical monocytes`
+
+#2 generate sample level metadata - do it for each "control" sample vs "treated" sample   
+
+counts.t <- t(counts_cm)
+counts.t <- as.data.frame(cts.t)
+#condition <- factor(c("copd", "copd","copd", "copd", "nonsmoker","nonsmoker","nonsmoker","nonsmoker", "smoker", "smoker","smoker", "smoker"))
+cm_coldata <- data.frame(row.names = colnames(counts_cm), condition)
+
+# Set factor level
+cm_coldata$condition <- relevel(cm_coldata$condition, ref = "nonsmoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+cm_dds <- DESeqDataSetFromMatrix(countData = counts_cm,
+                                 colData = cm_coldata,
+                                 design = ~ condition)
+
+
+# filter
+keep <- rowSums(counts(cm_dds)) >=10
+cm_dds <- cm_dds[keep,]
+
+# run DESeq2
+cm_dds <- DESeq(cm_dds)
+
+# Check the coefficients for the comparison
+resultsNames(cm_dds)
+
+# Generate results object
+res19 <- results(cm_dds, name = "condition_copd_vs_nonsmoker")
+summary(res19)
+
+#Significant differentially regulated
+Sig_res19 <- subset(res19, padj < 0.05)
+summary(Sig_res19)
+
+res20 <- results(cm_dds, name = "condition_smoker_vs_nonsmoker")
+summary(res20)
+
+# Set factor level to smoker
+cm_coldata$condition <- relevel(cm_coldata$condition, ref = "smoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+cm_dds_1 <- DESeqDataSetFromMatrix(countData = counts_cm,
+                                   colData = cm_coldata,
+                                   design = ~ condition)
+
+# filter
+keep <- rowSums(counts(cm_dds_1)) >=10
+cm_dds_1 <- cm_dds_1[keep,]
+
+# run DESeq2
+cm_dds_1 <- DESeq(cm_dds_1)
+
+# Generate results object
+res21 <- results(cm_dds_1, name = "condition_copd_vs_smoker")
+summary(res21)
+
+#Significant differentially regulated
+Sig_res21 <- subset(res21, padj < 0.05)
+summary(Sig_res21)
+```
+
+#DESeq2 for Non clssical monocytes
+```{r NCM}
+# Let's run DE analysis with Non-classical monocytes
+# 1. Get counts matrix
+counts_ncm  <- cts.split.modified$`Non-classical monocytes`
+
+#2 generate sample level metadata - do it for each "control" sample vs "treated" sample   
+counts.t <- t(counts_ncm)
+counts.t <- as.data.frame(cts.t)
+condition <- factor(c("copd", "copd", "copd", "copd", "nonsmoker", "nonsmoker", "nonsmoker", "nonsmoker", "smoker", "smoker", "smoker", "smoker"))
+ncm_coldata <- data.frame(row.names = colnames(counts_ncm), condition)
+
+# Set factor level
+ncm_coldata$condition <- relevel(ncm_coldata$condition, ref = "nonsmoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+ncm_dds <- DESeqDataSetFromMatrix(countData = counts_ncm,
+                                colData = ncm_coldata,
+                                design = ~ condition)
+
+
+# filter
+keep <- rowSums(counts(ncm_dds)) >=10
+ncm_dds <- ncm_dds[keep,]
+
+# run DESeq2
+ncm_dds <- DESeq(ncm_dds)
+
+# Check the coefficients for the comparison
+resultsNames(ncm_dds)
+
+# Generate results object
+res22 <- results(ncm_dds, name = "condition_copd_vs_nonsmoker")
+summary(res22)
+
+#Significant differentially regulated
+Sig_res22 <- subset(res22, padj < 0.05)
+summary(Sig_res22)
+
+res23 <- results(ncm_dds, name = "condition_smoker_vs_nonsmoker")
+summary(res23)
+
+# Set factor level to smoker
+ncm_coldata$condition <- relevel(ncm_coldata$condition, ref = "smoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+ncm_dds_1 <- DESeqDataSetFromMatrix(countData = counts_ncm,
+                                  colData = ncm_coldata,
+                                  design = ~ condition)
+
+# filter
+keep <- rowSums(counts(ncm_dds_1)) >=10
+ncm_dds_1 <- ncm_dds_1[keep,]
+
+# run DESeq2
+ncm_dds_1 <- DESeq(ncm_dds_1)
+
+# Generate results object
+res24 <- results(ncm_dds_1, name = "condition_copd_vs_smoker")
+summary(res24)
+
+```
+
+#DESeq2 for DC2
+```{r DC2}
+
+# Let's run DE analysis with DC2
+# 1. Get counts matrix
+counts_dc  <- cts.split.modified$`DC2`
+
+#2 generate sample level metadata - do it for each "control" sample vs "treated" sample   
+
+counts.t <- t(counts_dc)
+counts.t <- as.data.frame(cts.t)
+condition <- factor(c("copd", "copd","copd", "copd", "nonsmoker", "nonsmoker", "nonsmoker", "nonsmoker", "smoker", "smoker"))
+dc_coldata <- data.frame(row.names = colnames(counts_dc), condition)
+
+# Set factor level
+dc_coldata$condition <- relevel(dc_coldata$condition, ref = "nonsmoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+dc_dds <- DESeqDataSetFromMatrix(countData = counts_dc,
+                                 colData = dc_coldata,
+                                 design = ~ condition)
+
+
+# filter
+keep <- rowSums(counts(dc_dds)) >=10
+dc_dds <- dc_dds[keep,]
+
+# run DESeq2
+dc_dds <- DESeq(dc_dds)
+
+# Check the coefficients for the comparison
+resultsNames(dc_dds)
+
+# Generate results object
+res25 <- results(dc_dds, name = "condition_copd_vs_nonsmoker")
+summary(res25)
+
+#Significant differentially regulated
+Sig_res25 <- subset(res25, padj < 0.05)
+summary(Sig_res25)
+
+res26 <- results(dc_dds, name = "condition_smoker_vs_nonsmoker")
+summary(res26)
+
+#Significant differentially regulated
+Sig_res26 <- subset(res26, padj < 0.05)
+summary(Sig_res26)
+
+# Set factor level to smoker
+dc_coldata$condition <- relevel(dc_coldata$condition, ref = "smoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+dc_dds_1 <- DESeqDataSetFromMatrix(countData = counts_dc,
+                                   colData = dc_coldata,
+                                   design = ~ condition)
+
+# filter
+keep <- rowSums(counts(dc_dds_1)) >=10
+dc_dds_1 <- dc_dds_1[keep,]
+
+# run DESeq2
+dc_dds_1 <- DESeq(dc_dds_1)
+
+# Generate results object
+res27 <- results(dc_dds_1, name = "condition_copd_vs_smoker")
+summary(res27)
+
+#Significant differentially regulated
+Sig_res27 <- subset(res27, padj < 0.05)
+summary(Sig_res27)
+
+```
+
+#DESeq2 for NK cells
+```{r NK cells}
+# Let's run DE analysis with NK cells
+# 1. Get counts matrix
+counts_nk  <- cts.split.modified$`NK cells`
+
+#2 generate sample level metadata - do it for each "control" sample vs "treated" sample   
+
+counts.t <- t(counts_nk)
+counts.t <- as.data.frame(cts.t)
+condition <- factor(c("copd", "copd", "copd", "nonsmoker", "nonsmoker", "nonsmoker", "nonsmoker", "smoker", "smoker"))
+nk_coldata <- data.frame(row.names = colnames(counts_nk), condition)
+
+# Set factor level
+nk_coldata$condition <- relevel(nk_coldata$condition, ref = "nonsmoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+nk_dds <- DESeqDataSetFromMatrix(countData = counts_nk,
+                                colData = nk_coldata,
+                                design = ~ condition)
+
+
+# filter
+keep <- rowSums(counts(nk_dds)) >=10
+nk_dds <- nk_dds[keep,]
+
+# run DESeq2
+nk_dds <- DESeq(nk_dds)
+
+# Check the coefficients for the comparison
+resultsNames(nk_dds)
+
+# Generate results object
+res28 <- results(nk_dds, name = "condition_copd_vs_nonsmoker")
+summary(res28)
+
+#Significant differentially regulated
+Sig_res28 <- subset(res28, padj < 0.05)
+summary(Sig_res28)
+
+res29 <- results(nk_dds, name = "condition_smoker_vs_nonsmoker")
+summary(res29)
+
+#Significant differentially regulated
+Sig_res29 <- subset(res29, padj < 0.05)
+summary(Sig_res29)
+
+# Set factor level to smoker
+nk_coldata$condition <- relevel(nk_coldata$condition, ref = "smoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+nk_dds_1 <- DESeqDataSetFromMatrix(countData = counts_nk,
+                                  colData = nk_coldata,
+                                  design = ~ condition)
+
+# filter
+keep <- rowSums(counts(nk_dds_1)) >=10
+nk_dds_1 <- nk_dds_1[keep,]
+
+# run DESeq2
+nk_dds_1 <- DESeq(nk_dds_1)
+
+# Generate results object
+res30 <- results(nk_dds_1, name = "condition_copd_vs_smoker")
+summary(res30)
+
+#Significant differentially regulated
+Sig_res30 <- subset(res30, padj < 0.05)
+summary(Sig_res30)
+
+```
+
+#DESeq2 for Plasma Cells
+```{r PC}
+#PLASMA CELLS
+
+# Let's run DE analysis with Plasma cells
+# 1. Get counts matrix
+counts_pc <- cts.split.modified$`Plasma cells`
+
+#2 generate sample level metadata - do it for each "control" sample vs "treated" sample   
+
+condition <- factor(c("copd", "copd", "copd", "copd", "nonsmoker", "nonsmoker", "nonsmoker", "nonsmoker", "smoker", "smoker", "smoker"))
+
+pc_coldata <- data.frame(row.names = colnames(counts_pc), condition)
+
+# Set factor level
+pc_coldata$condition <- relevel(pc_coldata$condition, ref = "nonsmoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+pc_dds <- DESeqDataSetFromMatrix(countData = counts_pc,
+                                 colData = pc_coldata,
+                                 design = ~ condition)
+
+
+# filter
+keep <- rowSums(counts(pc_dds)) >=10
+pc_dds <- pc_dds[keep,]
+
+# run DESeq2
+pc_dds <- DESeq(pc_dds)
+
+# Check the coefficients for the comparison
+resultsNames(pc_dds)
+
+# Generate results object
+res31 <- results(pc_dds, name = "condition_copd_vs_nonsmoker")
+summary(res31)
+
+#Significant DEG
+
+Sig_res31 <- subset(res31, padj < 0.05)
+summary(Sig_res31)
+
+res32 <- results(pc_dds, name = "condition_smoker_vs_nonsmoker")
+summary(res32)
+
+#Significant DEG
+
+Sig_res32 <- subset(res32, padj < 0.05)
+summary(Sig_res32)
+
+# Set factor level to smoker
+pc_coldata$condition <- relevel(pc_coldata$condition, ref = "smoker") 
+
+# perform DESeq2 --------
+# Create DESeq2 object   
+pc_dds_1 <- DESeqDataSetFromMatrix(countData = counts_pc,
+                                   colData = pc_coldata,
+                                   design = ~ condition)
+
+
+# filter
+keep <- rowSums(counts(pc_dds_1)) >=10
+pc_dds_1 <- pc_dds_1[keep,]
+
+# run DESeq2
+pc_dds_1 <- DESeq(pc_dds_1)
+
+# Generate results object
+res33 <- results(pc_dds_1, name = "condition_copd_vs_smoker")
+summary(res33)
+
+#Significant DEG
+
+Sig_res33 <- subset(res33, padj < 0.05)
+summary(Sig_res33)
+
+```
+
+
