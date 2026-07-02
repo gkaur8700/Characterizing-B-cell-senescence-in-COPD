@@ -20,10 +20,9 @@ library(Seurat)
 library(ggplot2)
 library(tidyverse)
 library(writexl)
-library(DESeq2)
 
 #Read the data
-data <- readRDS("/Volumes/My Passport/Final Data/HarmonyIntegrated_annotated_data_final.rds")
+data <- readRDS("/path_to_folder/HarmonyIntegrated_annotated_data_final.rds")
 
 data$CellTypes <- Idents(data)
 ```
@@ -59,9 +58,6 @@ Plot1 <- DimPlot(data, split.by = "orig.ident",
 
 print(Plot1)
 
-#Save the Plot
-
-ggsave(Plot1, filename = '~/Desktop/Group_split.tiff', width = 10, height =8)
 
 Plot2 <- DimPlot(data,
                 reduction = "umap",
@@ -78,11 +74,7 @@ Plot3 <- DimPlot(data,
 
 print(Plot3)
 
-ggsave(p2, filename = '~/Desktop/Annotated_umap_Plot_general_final.tiff', width = 10, height =8)
-ggsave(Plot2, filename = '~/Desktop/AnnotatedPlotwithlabels_final.tiff', width = 12, height =10)
-ggsave(Plot3, filename = '~/Desktop/AnnotatedPlotwithoutlabels_final.tiff', width = 12, height =10)
-
 
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
