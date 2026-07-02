@@ -5,10 +5,6 @@ date: "2026-05-24"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 ## R Markdown
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
@@ -24,22 +20,21 @@ library(writexl)
 library(dplyr)
 
 #read the .rds file
-data <- readRDS("/Volumes/My Passport/Final Data/HarmonyIntegrated_annotated_data_final.rds")
+data <- readRDS("/path_to_folder/HarmonyIntegrated_annotated_data_final.rds")
 
 data$CellTypes <- Idents(data)
 
 #Subset B cell cluster
 bcell <- subset(data, idents = c("B cells"))
 
-#Save this file
-saveRDS(bcell, file = "/Users/gagandeepkaur/Desktop/Figure 4B/bcell.rds")
 ```
 
-## Read the senescence -associated geneset
+## Read the senescence -associated geneset as deetrmined 
+## using Desktop application for GSEA
 
 ```{r senescence-associated geneset }
 # Read the identified senescence associated geneset
-genes <- read.csv("/Users/gagandeepkaur/Desktop/Figure 4B/Raw Data/B cell senescence_genes.csv")
+genes <- read.csv("/path_to_folder/B cell senescence_genes.csv")
 
 # Read the column called "gene"
 gene_list <- genes$gene
@@ -104,11 +99,9 @@ final_table <- final_table[, c(
 head(final_table)
 
 #Write the final table
-write.csv(final_table, "/Users/gagandeepkaur/Desktop/Figure 4B/bcell_senescence_gene_expression.csv",
+write.csv(final_table, "/path_to_folder/Figure 4B/bcell_senescence_gene_expression.csv",
           row.names = FALSE)
-
 ```
-
 
 ```{r add the group column}
 
@@ -122,12 +115,11 @@ final_table$group <- case_when(
 
 write.csv(
   final_table,
-  "/Users/gagandeepkaur/Desktop/Figure 4B/Bcell_sample_expression_grouped.csv",
+  "/path_to_folder/Figure 4B/Bcell_sample_expression_grouped.csv",
   row.names = FALSE
 )
 
 ```
-
 
 ```{r identify log2FC between COPD vs NS}
 
@@ -136,7 +128,6 @@ write.csv(
 ns <- subset(final_table, group == "NS")
 copd <- subset(final_table, group == "C")
 sm <- subset(final_table, group == "Sm")
-
 
 gene_cols <- setdiff(colnames(final_table), c("cluster","sample","group"))
 
@@ -189,11 +180,11 @@ down_genes <- downregulated$gene
 
 head(downregulated)
 
-write.csv(results, "/Users/gagandeepkaur/Desktop/Figure 4B/B_cell_senescence_fold_change_scRNA_results.csv")
+write.csv(results, "/path_to_folder/Figure 4B/B_cell_senescence_fold_change_scRNA_results.csv")
 
-write.csv(upregulated, "/Users/gagandeepkaur/Desktop/Figure 4B/upregulated_genes_Bcells_copd_vs_ns_Sen.csv", row.names = FALSE)
+write.csv(upregulated, "/path_to_folder/Figure 4B/upregulated_genes_Bcells_copd_vs_ns_Sen.csv", row.names = FALSE)
 
-write.csv(downregulated, "/Users/gagandeepkaur/Desktop/Figure 4B/downregulated_genes_Bcells_copd_vs_ns_Sen.csv", row.names = FALSE)
+write.csv(downregulated, "/path_to_folder/Figure 4B/downregulated_genes_Bcells_copd_vs_ns_Sen.csv", row.names = FALSE)
 
 ```
 
@@ -219,9 +210,7 @@ Sig_Sen_genes_B_cells <- rbind(z_up_df, z_down_df)
 
 head(Sig_Sen_genes_B_cells)
 
-write.csv(Sig_Sen_genes_B_cells, "/Users/gagandeepkaur/Desktop/Figure 4B/Zscore_sig_DEGs_Bcells_Sen_20260225.csv", row.names = TRUE)
+write.csv(Sig_Sen_genes_B_cells, "/path_to_folder/Figure 4B/Zscore_sig_DEGs_Bcells_Sen_20260225.csv", row.names = TRUE)
 
 ```
 
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
