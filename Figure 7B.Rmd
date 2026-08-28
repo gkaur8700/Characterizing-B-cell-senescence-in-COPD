@@ -1,0 +1,315 @@
+---
+title: "Xenium-7B"
+author: "GK"
+date: "2026-08-04"
+output: html_document
+---
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r Load libraries}
+library(Seurat)
+library(ggplot2)
+library(arrow)
+```
+
+
+```{r Input Nonsmokers transcript density}
+nonsmoker <- c("/Users/gagandeepkaur/Desktop/Xenium/Non smoker/NS1/SenMicro1_ns1_transcript_density.csv",
+           "/Users/gagandeepkaur/Desktop/Xenium/Non smoker/NS1/SenMicro2_transcript_stats_ns1.csv",
+           "/Users/gagandeepkaur/Desktop/Xenium/Non smoker/NS2/SenMicro1_NS2_transcript_stats.csv",
+           "//Users/gagandeepkaur/Desktop/Xenium/Non smoker/NS2/SenMicro2_NS2_transcript_stats.csv",
+           "/Users/gagandeepkaur/Desktop/Xenium/Non smoker/NS3/SenMicro1_NS3_transcript_stats.csv",
+           "/Users/gagandeepkaur/Desktop/Xenium/Non smoker/NS3/SenMicro2_NS3_transcript_stats.csv",
+           "/Users/gagandeepkaur/Desktop/Xenium/Non smoker/NS4/SenMicro1_NS4_transcript_stats.csv",
+           "/Users/gagandeepkaur/Desktop/Xenium/Non smoker/NS4/SenMicro2_NS4_transcript_stats.csv",
+           "/Users/gagandeepkaur/Desktop/Xenium/Non smoker/NS5/SenMicro1_NS5_transcript_stats.csv",
+           "/Users/gagandeepkaur/Desktop/Xenium/Non smoker/NS5/SenMicro2_NS5_transcript_stats.csv",
+           "/Users/gagandeepkaur/Desktop/Xenium/Non smoker/NS6/SenMicro1_NS6_transcript_stats.csv",
+           "/Users/gagandeepkaur/Desktop/Xenium/Non smoker/NS6/SenMicro2_NS6_transcript_stats.csv",
+           "/Users/gagandeepkaur/Desktop/Xenium/Non smoker/NS7/SenMicro1_NS7_transcript_stats.csv",
+           "/Users/gagandeepkaur/Desktop/Xenium/Non smoker/NS7/SenMicro2_NS7_transcript_stats.csv",
+           "//Users/gagandeepkaur/Desktop/Xenium/Non smoker/NS8/SenMicro1_NS8_transcript_stats.csv",
+           "/Users/gagandeepkaur/Desktop/Xenium/Non smoker/NS8/SenMicro2_NS8_transcript_stats.csv")
+
+```
+
+```{r read the non smoker file and create a matrix}
+# Read each CSV into a list
+data_list <- lapply(nonsmoker, function(f) {
+  df <- read.csv(f, skip = 3, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE)
+  df$Sample <- basename(f)  # or NS1, NS2, etc.
+  df
+})
+
+#check gene order across all files
+
+# Extract gene vectors
+gene_lists <- lapply(data_list, function(df) df$Gene)
+
+# Compare to the first file
+first_genes <- gene_lists[[1]]
+order_check <- sapply(gene_lists, function(g) all(g == first_genes))
+
+#combine all files for non-smokers
+
+combined_NS <- do.call(rbind, data_list)
+
+#add normalized density to the file
+
+# Add Density_normalized column for each row
+# Create a lookup table: sample name → full file path
+file_lookup <- setNames(nonsmoker, basename(nonsmoker))
+
+# Normalize counts using full path
+combined_NS$Density_normalized <- mapply(function(count, sample_name) {
+  full_path <- file_lookup[[sample_name]]       # get the full path
+  area <- as.numeric(sub(".*: ", "", readLines(full_path, n = 2)[2]))
+  count / area
+}, combined_NS$Count, combined_NS$Sample)
+
+#let us add a group column
+combined_NS$Group <- "NS" 
+
+library(tidyr)
+
+wide_combined_NS <- pivot_wider(
+  combined_NS,
+  names_from = Sample,
+  values_from = c(Count, `Density (µm^-2)`, Density_normalized)
+)
+```
+
+```{r read the smoker files}
+smoker <- c("/Users/gagandeepkaur/Desktop/Xenium/Smoker/Sm1/SenMicro1_Sm1_transcript_stats.csv",
+              "/Users/gagandeepkaur/Desktop/Xenium/Smoker/Sm1/SenMicro2_Sm1_transcript_stats.csv",
+              "/Users/gagandeepkaur/Desktop/Xenium/Smoker/Sm2/SenMicro1_Sm2_transcript_stats.csv",
+              "/Users/gagandeepkaur/Desktop/Xenium/Smoker/Sm2/SenMicro2_Sm2_transcript_stats.csv",
+              "/Users/gagandeepkaur/Desktop/Xenium/Smoker/Sm3/SenMicro1_Sm3_transcript_stats.csv",
+              "/Users/gagandeepkaur/Desktop/Xenium/Smoker/Sm3/SenMicro2_Sm3_transcript_stats.csv",
+              "/Users/gagandeepkaur/Desktop/Xenium/Smoker/Sm4/SenMicro1_Sm4_transcript_stats.csv",
+              "//Users/gagandeepkaur/Desktop/Xenium/Smoker/Sm4/SenMicro2_Sm4_transcript_stats.csv",
+              "/Users/gagandeepkaur/Desktop/Xenium/Smoker/Sm5/SenMicro1_Sm5_transcript_stats.csv",
+              "/Users/gagandeepkaur/Desktop/Xenium/Smoker/Sm5/SenMicro2_Sm5_transcript_stats.csv",
+              "/Users/gagandeepkaur/Desktop/Xenium/Smoker/Sm6/SenMicro1_Sm6_transcript_stats.csv",
+              "/Users/gagandeepkaur/Desktop/Xenium/Smoker/Sm6/SenMicro2_Sm6_transcript_stats.csv")
+```
+
+
+```{r read the smoker file and create a matrix}
+#read each file:
+# Read each CSV into a list
+sm_list <- lapply(smoker, function(f) {
+  df <- read.csv(f, skip = 3, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE)
+  df$Sample <- basename(f)  # or NS1, NS2, etc.
+  df
+})
+
+#check gene order across all files
+
+# Extract gene vectors
+gene_lists <- lapply(sm_list, function(df) df$Gene)
+
+# Compare to the first file
+first_genes <- gene_lists[[1]]
+order_check <- sapply(gene_lists, function(g) all(g == first_genes))
+
+#combine all files for non-smokers
+
+combined_Sm <- do.call(rbind, sm_list)
+
+#add normalized density to the file
+
+# Add Density_normalized column for each row
+# Create a lookup table: sample name → full file path
+file_lookup1 <- setNames(smoker, basename(smoker))
+
+# Normalize counts using full path
+combined_Sm$Density_normalized <- mapply(function(count, sample_name) {
+  full_path <- file_lookup1[[sample_name]]       # get the full path
+  area <- as.numeric(sub(".*: ", "", readLines(full_path, n = 2)[2]))
+  count / area
+}, combined_Sm$Count, combined_Sm$Sample)
+
+#let us add a group column
+combined_Sm$Group <- "Sm" 
+
+
+```
+
+```{r read the COPD transcript files}
+copd <- c("/Users/gagandeepkaur/Desktop/Xenium/COPD/COPD1/SenMicro1_COPD1_transcript_stats.csv",
+                "/Users/gagandeepkaur/Desktop/Xenium/COPD/COPD1/SenMicro2_COPD1_transcript_stats.csv",
+                "/Users/gagandeepkaur/Desktop/Xenium/COPD/COPD2/SenMicro1_COPD2_transcript_stats.csv",
+                "/Users/gagandeepkaur/Desktop/Xenium/COPD/COPD2/SenMicro2_COPD2_transcript_stats.csv",
+                "/Users/gagandeepkaur/Desktop/Xenium/COPD/COPD3/SenMicro1_copd3_transcript_stats.csv",
+                "/Users/gagandeepkaur/Desktop/Xenium/COPD/COPD3/SenMicro2_copd3_transcript_stats.csv",
+                "/Users/gagandeepkaur/Desktop/Xenium/COPD/COPD4/SenMicro1_copd4_transcript_stats.csv",
+                "/Users/gagandeepkaur/Desktop/Xenium/COPD/COPD4/SenMicro2_copd4_transcript_stats.csv",
+                "/Users/gagandeepkaur/Desktop/Xenium/COPD/COPD5/SenMicro1_copd5_transcript_stats.csv",
+                "/Users/gagandeepkaur/Desktop/Xenium/COPD/COPD5/SenMicro2_copd5_transcript_stats.csv",
+                "/Users/gagandeepkaur/Desktop/Xenium/COPD/COPD6/SenMicro1_copd6_transcript_stats.csv",
+                "/Users/gagandeepkaur/Desktop/Xenium/COPD/COPD6/SenMicro2_copd6_transcript_stats.csv",
+                "/Users/gagandeepkaur/Desktop/Xenium/COPD/COPD7/SenMicro1_COPD7_transcript_stats.csv",
+                "/Users/gagandeepkaur/Desktop/Xenium/COPD/COPD7/SenMicro2_COPD7_transcript_stats.csv",
+                "/Users/gagandeepkaur/Desktop/Xenium/COPD/COPD8/SenMicro1_COPD8_transcript_stats.csv",
+                "/Users/gagandeepkaur/Desktop/Xenium/COPD/COPD8/SenMicro2_COPD8_transcript_stats.csv")
+
+```
+
+```{r read the COPD files and create a matrix}
+#read each file:
+# Read each CSV into a list
+copd_list <- lapply(copd, function(f) {
+  df <- read.csv(f, skip = 3, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE)
+  df$Sample <- basename(f)  
+  df
+})
+
+#check gene order across all files
+
+# Extract gene vectors
+gene_lists <- lapply(copd_list, function(df) df$Gene)
+
+# Compare to the first file
+first_genes <- gene_lists[[1]]
+order_check <- sapply(gene_lists, function(g) all(g == first_genes))
+
+#combine all files for copd
+
+combined_copd <- do.call(rbind, copd_list)
+
+#add normalized density to the file
+
+# Add Density_normalized column for each row
+# Create a lookup table: sample name → full file path
+file_lookup2 <- setNames(copd, basename(copd))
+
+# Normalize counts using full path
+combined_copd$Density_normalized <- mapply(function(count, sample_name) {
+  full_path <- file_lookup2[[sample_name]]       # get the full path
+  area <- as.numeric(sub(".*: ", "", readLines(full_path, n = 2)[2]))
+  count / area
+}, combined_copd$Count, combined_copd$Sample)
+
+#let us add a group column
+combined_copd$Group <- "COPD" 
+
+```
+
+
+```{r write the files}
+write.csv(combined_NS, "/Users/gagandeepkaur/Desktop/NS_transcript_density.csv")
+write.csv(combined_Sm, "/Users/gagandeepkaur/Desktop/Sm_transcript_density.csv")
+write.csv(combined_copd, "/Users/gagandeepkaur/Desktop/Copd_transcript_density.csv")
+
+```
+
+```{r combine all the groups}
+#combine all the groups for comparison
+all_combined <- rbind(combined_NS, combined_Sm, combined_copd)
+```
+
+```{r fold change calculation}
+library(dplyr)
+library(tidyr)
+
+# Step 1: Compute mean density per gene per group
+avg_density <- all_combined %>%
+  group_by(Gene, Group) %>%
+  summarize(mean_density = mean(Density_normalized), .groups = "drop")
+
+# Step 2: Pivot to wide format
+avg_density_wide <- avg_density %>%
+  pivot_wider(names_from = Group, values_from = mean_density)
+
+# Step 3: Compute fold change
+avg_density_wide <- avg_density_wide %>%
+  mutate(
+    FC_COPD_vs_NS = COPD / NS,
+    FC_COPD_vs_Sm = COPD / Sm,
+    log2_FC_COPD_vs_NS = log2(FC_COPD_vs_NS),
+    log2_FC_COPD_vs_Sm = log2(FC_COPD_vs_Sm)
+  )
+
+# Function to compute p-value for two groups
+compute_p <- function(df, group1, group2) {
+  # Subset only the two groups
+  df_sub <- df[df$Group %in% c(group1, group2), ]
+  
+  # Check if both groups have at least 2 samples
+  if(length(unique(df_sub$Group)) < 2) return(NA)
+  
+  t.test(Density_normalized ~ Group, data = df_sub)$p.value
+}
+
+p_values <- all_combined %>%
+  group_by(Gene) %>%
+  group_map(~ tibble(
+    Gene = .y$Gene,
+    p_COPD_vs_NS = compute_p(.x, "COPD", "NS"),
+    p_COPD_vs_Sm = compute_p(.x, "COPD", "Sm")
+  )) %>%
+  bind_rows()
+
+```
+```{r merge with fold change}
+avg_density_wide <- avg_density_wide %>%
+  left_join(p_values, by = "Gene") %>%
+  mutate(
+    FDR_COPD_vs_NS = p.adjust(p_COPD_vs_NS, method = "BH"),
+    FDR_COPD_vs_Sm = p.adjust(p_COPD_vs_Sm, method = "BH")
+  )
+
+write.csv(avg_density_wide, "/Users/gagandeepkaur/Desktop/Fold_Change_All.csv")
+```
+
+
+```{r significant DEGs}
+#filter out significantly up and downregulated genes
+#since these are different regions of the lung, FDR does not make sense here
+sig_up_NS <- avg_density_wide %>% filter(log2_FC_COPD_vs_NS > 1)
+sig_down_NS <- avg_density_wide %>% filter(log2_FC_COPD_vs_NS < -1)
+
+COPD_vs_NS <- rbind(sig_up_NS, sig_down_NS)
+
+sig_up_Sm <- avg_density_wide %>% filter(log2_FC_COPD_vs_Sm > 1)
+sig_down_Sm <- avg_density_wide %>% filter(log2_FC_COPD_vs_Sm < -1)
+
+COPD_vs_Sm <- rbind(sig_up_Sm, sig_down_Sm)
+
+#identify statistical significance
+#also wished to p-value to this equation
+
+sig_up_NS <- avg_density_wide %>% filter(log2_FC_COPD_vs_NS > 1 & p_COPD_vs_NS < 0.05)
+sig_down_NS <- avg_density_wide %>% filter(log2_FC_COPD_vs_NS < -1 & p_COPD_vs_NS < 0.05) # No DEGs here
+
+sig_up_Sm <- avg_density_wide %>% filter(log2_FC_COPD_vs_Sm > 1 & p_COPD_vs_Sm < 0.05)
+sig_down_Sm <- avg_density_wide %>% filter(log2_FC_COPD_vs_Sm < -1 & p_COPD_vs_Sm < 0.05) #No DEGs here
+
+
+
+```
+
+
+```{r write the. results}
+print(COPD_vs_NS)
+write.csv(COPD_vs_NS, "/Users/gagandeepkaur/Desktop/Sig_DEGs_copd_v_ns.csv")
+
+print(COPD_vs_Sm)
+write.csv(COPD_vs_Sm, "/Users/gagandeepkaur/Desktop/Sig_DEGs_copd_v_sm.csv")
+
+print(sig_up_NS)
+write.csv(sig_up_NS, "/Users/gagandeepkaur/Desktop/Sig_DEGs_copd_v_ns_pvalue.csv")
+
+print(sig_up_Sm)
+write.csv(sig_down_Sm, "/Users/gagandeepkaur/Desktop/Sig_DEGs_copd_v_sm_pvalue.csv")
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

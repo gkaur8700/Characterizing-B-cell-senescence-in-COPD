@@ -1,0 +1,107 @@
+---
+title: "Figure 7D"
+author: "GK"
+date: "2026-08-05"
+output: html_document
+---
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r Load libraries}
+library(Seurat)
+library(ggplot2)
+library(arrow)
+```
+
+
+```{r Read the files}
+#NS and COPD transcript 
+NS <- read.csv("/Users/gagandeepkaur/Desktop/Figure 7/Figure 7B/Results/NS_transcript_density.csv")
+COPD <- read.csv("/Users/gagandeepkaur/Desktop/Figure 7/Figure 7B/Results/Copd_transcript_density.csv")
+sen <- read.csv("//Users/gagandeepkaur/Desktop/Figure 7/Figure 7D/Sen_gene.csv")
+genes <- sen$Genes
+```
+
+```{r Heatmap}
+# Filter
+filtered_ns <- NS[NS$Gene %in% genes, ]
+filtered_copd <- COPD[COPD$Gene%in% genes, ]
+
+library(dplyr)
+library(tidyr)
+
+# Create gene x sample matrix
+gene_matrix_ns <-  filtered_ns%>%
+  select(Gene, Sample, Density_normalized) %>%
+  pivot_wider(
+    names_from = Sample,
+    values_from = Density_normalized
+  )
+gene_matrix_c <-  filtered_copd%>%
+  select(Gene, Sample, Density_normalized) %>%
+  pivot_wider(
+    names_from = Sample,
+    values_from = Density_normalized
+  )
+
+write.csv(gene_matrix_ns, "/Users/gagandeepkaur/Desktop/gene_density_matrix_ns.csv")
+write.csv(gene_matrix_c, "/Users/gagandeepkaur/Desktop/gene_density_matrix_copd.csv")
+
+```
+
+
+```{r z scoring of the data}
+# Convert to data frames/matrices
+ns_mat <- as.data.frame(gene_matrix_ns)
+copd_mat <- as.data.frame(gene_matrix_c)
+
+# Set Gene as row names
+rownames(ns_mat) <- ns_mat$Gene
+ns_mat$Gene <- NULL
+
+rownames(copd_mat) <- copd_mat$Gene
+copd_mat$Gene <- NULL
+
+# Keep genes present in BOTH datasets
+common_genes <- intersect(rownames(ns_mat), rownames(copd_mat))
+
+ns_mat <- ns_mat[common_genes, , drop = FALSE]
+copd_mat <- copd_mat[common_genes, , drop = FALSE]
+
+# Combine NS and COPD samples
+combined_mat <- cbind(ns_mat, copd_mat)
+
+# --------------------------------
+# LOG2 TRANSFORMATION
+# --------------------------------
+
+combined_log2 <- log2(combined_mat + 1)
+
+# --------------------------------
+# Z-SCORE EACH GENE
+# across ALL NS + COPD samples
+# --------------------------------
+
+combined_z <- t(scale(t(combined_log2)))
+
+# Convert back to data frame
+combined_z <- as.data.frame(combined_z)
+
+# Put Gene back as a column
+combined_z$Gene <- rownames(combined_z)
+
+# Move Gene to first column
+combined_z <- combined_z %>%
+  select(Gene, everything())
+
+write.csv(combined_z, "/Users/gagandeepkaur/Desktop/Z-score_copd_v_ns.csv")
+
+```
+
+
+
