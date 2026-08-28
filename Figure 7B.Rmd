@@ -20,15 +20,15 @@ library(arrow)
 
 
 ```{r Input Nonsmokers transcript density}
-nonsmoker <- c("/path_to_folder/all NS samples_transcript_Stats")
+Grp1 <- c("/path_to_folder/all_Grp1_samples_transcript_Stats")
 
 ```
 
 ```{r read the non smoker file and create a matrix}
 # Read each CSV into a list
-data_list <- lapply(nonsmoker, function(f) {
+data_list <- lapply(Grp1, function(f) {
   df <- read.csv(f, skip = 3, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE)
-  df$Sample <- basename(f)  # or NS1, NS2, etc.
+  df$Sample <- basename(f)  
   df
 })
 
@@ -41,90 +41,88 @@ gene_lists <- lapply(data_list, function(df) df$Gene)
 first_genes <- gene_lists[[1]]
 order_check <- sapply(gene_lists, function(g) all(g == first_genes))
 
-#combine all files for non-smokers
+#combine all files for Grp1
 
-combined_NS <- do.call(rbind, data_list)
+combined_grp1 <- do.call(rbind, data_list)
 
 #add normalized density to the file
-
 # Add Density_normalized column for each row
 # Create a lookup table: sample name → full file path
-file_lookup <- setNames(nonsmoker, basename(nonsmoker))
+
+file_lookup <- setNames(Grp1, basename(Grp1))
 
 # Normalize counts using full path
-combined_NS$Density_normalized <- mapply(function(count, sample_name) {
+combined_grp1$Density_normalized <- mapply(function(count, sample_name) {
   full_path <- file_lookup[[sample_name]]       # get the full path
   area <- as.numeric(sub(".*: ", "", readLines(full_path, n = 2)[2]))
   count / area
-}, combined_NS$Count, combined_NS$Sample)
+}, combined_grp1$Count, combined_grp1$Sample)
 
 #let us add a group column
-combined_NS$Group <- "NS" 
+combined_grp1$Group <- "grp1" 
 
 library(tidyr)
 
-wide_combined_NS <- pivot_wider(
-  combined_NS,
+wide_combined_grp1 <- pivot_wider(
+  combined_grp1,
   names_from = Sample,
   values_from = c(Count, `Density (µm^-2)`, Density_normalized)
 )
 ```
 
-```{r read the smoker files}
-smoker <- c("/path_to_folder/all_smoker_samples_transcript_stats")
+```{r read the Gro2files}
+Grp2 <- c("/path_to_folder/all_Grp2_samples_transcript_stats")
 ```
-
 
 ```{r read the smoker file and create a matrix}
 #read each file:
 # Read each CSV into a list
-sm_list <- lapply(smoker, function(f) {
+grp2_list <- lapply(Grp2, function(f) {
   df <- read.csv(f, skip = 3, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE)
-  df$Sample <- basename(f)  # or NS1, NS2, etc.
+  df$Sample <- basename(f) 
   df
 })
 
 #check gene order across all files
 
 # Extract gene vectors
-gene_lists <- lapply(sm_list, function(df) df$Gene)
+gene_lists <- lapply(grp2_list, function(df) df$Gene)
 
 # Compare to the first file
 first_genes <- gene_lists[[1]]
 order_check <- sapply(gene_lists, function(g) all(g == first_genes))
 
-#combine all files for non-smokers
+#combine all files for Grp2
 
-combined_Sm <- do.call(rbind, sm_list)
+combined_grp2 <- do.call(rbind, grp2_list)
 
 #add normalized density to the file
 
 # Add Density_normalized column for each row
 # Create a lookup table: sample name → full file path
-file_lookup1 <- setNames(smoker, basename(smoker))
+file_lookup1 <- setNames(Grp2, basename(Grp2))
 
 # Normalize counts using full path
-combined_Sm$Density_normalized <- mapply(function(count, sample_name) {
+combined_grp2$Density_normalized <- mapply(function(count, sample_name) {
   full_path <- file_lookup1[[sample_name]]       # get the full path
   area <- as.numeric(sub(".*: ", "", readLines(full_path, n = 2)[2]))
   count / area
-}, combined_Sm$Count, combined_Sm$Sample)
+}, combined_grp2$Count, combined_grp2$Sample)
 
 #let us add a group column
-combined_Sm$Group <- "Sm" 
-
+combined_grp2$Group <- "Grp2" 
 
 ```
 
 ```{r read the COPD transcript files}
-copd <- c("/path_to_folder/all_copd_samples_transcript_stats")
+Grp3 <- c("/path_to_folder/all_Grp3_samples_transcript_stats")
 
 ```
 
 ```{r read the COPD files and create a matrix}
 #read each file:
 # Read each CSV into a list
-copd_list <- lapply(copd, function(f) {
+grp3_list <- lapply(Grp3, function(f) {
   df <- read.csv(f, skip = 3, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE)
   df$Sample <- basename(f)  
   df
@@ -133,7 +131,7 @@ copd_list <- lapply(copd, function(f) {
 #check gene order across all files
 
 # Extract gene vectors
-gene_lists <- lapply(copd_list, function(df) df$Gene)
+gene_lists <- lapply(grp3_list, function(df) df$Gene)
 
 # Compare to the first file
 first_genes <- gene_lists[[1]]
@@ -141,37 +139,35 @@ order_check <- sapply(gene_lists, function(g) all(g == first_genes))
 
 #combine all files for copd
 
-combined_copd <- do.call(rbind, copd_list)
+combined_grp3 <- do.call(rbind, grp3_list)
 
 #add normalized density to the file
 
 # Add Density_normalized column for each row
 # Create a lookup table: sample name → full file path
-file_lookup2 <- setNames(copd, basename(copd))
+file_lookup2 <- setNames(Grp3, basename(Grp3))
 
 # Normalize counts using full path
-combined_copd$Density_normalized <- mapply(function(count, sample_name) {
+combined_grp3$Density_normalized <- mapply(function(count, sample_name) {
   full_path <- file_lookup2[[sample_name]]       # get the full path
   area <- as.numeric(sub(".*: ", "", readLines(full_path, n = 2)[2]))
   count / area
-}, combined_copd$Count, combined_copd$Sample)
+}, combined_grp3$Count, combined_grp3$Sample)
 
 #let us add a group column
-combined_copd$Group <- "COPD" 
+combined_grp3$Group <- "Grp3" 
 
 ```
-
-
 ```{r write the files}
-write.csv(combined_NS, "path_to folder/NS_transcript_density.csv")
-write.csv(combined_Sm, "path_to_folder/Sm_transcript_density.csv")
-write.csv(combined_copd, "path_to_folder/Copd_transcript_density.csv")
+write.csv(combined_grp1, "path_to folder/grp1_transcript_density.csv")
+write.csv(combined_grp2, "path_to_folder/grp2_transcript_density.csv")
+write.csv(combined_grp3, "path_to_folder/grp3_transcript_density.csv")
 
 ```
 
 ```{r combine all the groups}
 #combine all the groups for comparison
-all_combined <- rbind(combined_NS, combined_Sm, combined_copd)
+all_combined <- rbind(combined_grp1, combined_grp2, combined_grp3)
 ```
 
 ```{r fold change calculation}
@@ -190,10 +186,10 @@ avg_density_wide <- avg_density %>%
 # Step 3: Compute fold change
 avg_density_wide <- avg_density_wide %>%
   mutate(
-    FC_COPD_vs_NS = COPD / NS,
-    FC_COPD_vs_Sm = COPD / Sm,
-    log2_FC_COPD_vs_NS = log2(FC_COPD_vs_NS),
-    log2_FC_COPD_vs_Sm = log2(FC_COPD_vs_Sm)
+    FC_Grp3_vs_Grp1 = Grp3 / Grp1,
+    FC_Grp3_vs_Grp2 = Grp3 / Grp2,
+    log2_FC_Grp3_vs_Grp1 = log2(FC_Grp3_vs_Grp1),
+    log2_FC_Grp3_vs_Grp2 = log2(FC_Grp3_vs_Grp2)
   )
 
 # Function to compute p-value for two groups
@@ -211,8 +207,8 @@ p_values <- all_combined %>%
   group_by(Gene) %>%
   group_map(~ tibble(
     Gene = .y$Gene,
-    p_COPD_vs_NS = compute_p(.x, "COPD", "NS"),
-    p_COPD_vs_Sm = compute_p(.x, "COPD", "Sm")
+    p_Grp3_vs_Grp1 = compute_p(.x, "Grp3", "Grp1"),
+    p_Grp3_vs_Grp2 = compute_p(.x, "Grp3", "Grp2")
   )) %>%
   bind_rows()
 
@@ -221,8 +217,8 @@ p_values <- all_combined %>%
 avg_density_wide <- avg_density_wide %>%
   left_join(p_values, by = "Gene") %>%
   mutate(
-    FDR_COPD_vs_NS = p.adjust(p_COPD_vs_NS, method = "BH"),
-    FDR_COPD_vs_Sm = p.adjust(p_COPD_vs_Sm, method = "BH")
+    FDR_Grp3_vs_Grp1 = p.adjust(p_Grp3_vs_Grp1, method = "BH"),
+    FDR_Grp3_vs_Grp2 = p.adjust(p_Grp3_vs_Grp2, method = "BH")
   )
 
 write.csv(avg_density_wide, "/path_to_folder/Fold_Change_All.csv")
@@ -232,24 +228,24 @@ write.csv(avg_density_wide, "/path_to_folder/Fold_Change_All.csv")
 ```{r significant DEGs}
 #filter out significantly up and downregulated genes
 #since these are different regions of the lung, FDR does not make sense here
-sig_up_NS <- avg_density_wide %>% filter(log2_FC_COPD_vs_NS > 1)
-sig_down_NS <- avg_density_wide %>% filter(log2_FC_COPD_vs_NS < -1)
+sig_up_Grp1 <- avg_density_wide %>% filter(log2_FC_Grp3_vs_Grp1 > 1)
+sig_down_Grp1 <- avg_density_wide %>% filter(log2_FC_Grp3_vs_Grp1 < -1)
 
-COPD_vs_NS <- rbind(sig_up_NS, sig_down_NS)
+Grp3_vs_Grp1 <- rbind(sig_up_Grp1, sig_down_Grp1)
 
-sig_up_Sm <- avg_density_wide %>% filter(log2_FC_COPD_vs_Sm > 1)
-sig_down_Sm <- avg_density_wide %>% filter(log2_FC_COPD_vs_Sm < -1)
+sig_up_Grp2 <- avg_density_wide %>% filter(log2_FC_Grp3_vs_Grp2 > 1)
+sig_down_Grp2 <- avg_density_wide %>% filter(log2_FC_Grp3_vs_Grp2 < -1)
 
-COPD_vs_Sm <- rbind(sig_up_Sm, sig_down_Sm)
+Grp3_vs_Grp2 <- rbind(sig_up_Grp2, sig_down_Grp2)
 
 #identify statistical significance
 #also wished to p-value to this equation
 
-sig_up_NS <- avg_density_wide %>% filter(log2_FC_COPD_vs_NS > 1 & p_COPD_vs_NS < 0.05)
-sig_down_NS <- avg_density_wide %>% filter(log2_FC_COPD_vs_NS < -1 & p_COPD_vs_NS < 0.05) # No DEGs here
+sig_up_Grp1 <- avg_density_wide %>% filter(log2_FC_Grp3_vs_Grp1 > 1 & p_Grp3_vs_Grp1 < 0.05)
+sig_down_Grp1 <- avg_density_wide %>% filter(log2_FC_Grp3_vs_Grp1 < -1 & p_Grp3_vs_Grp1 < 0.05) 
 
-sig_up_Sm <- avg_density_wide %>% filter(log2_FC_COPD_vs_Sm > 1 & p_COPD_vs_Sm < 0.05)
-sig_down_Sm <- avg_density_wide %>% filter(log2_FC_COPD_vs_Sm < -1 & p_COPD_vs_Sm < 0.05) #No DEGs here
+sig_up_Grp2 <- avg_density_wide %>% filter(log2_FC_Grp3_vs_Grp2 > 1 & p_Grp3_vs_Grp2 < 0.05)
+sig_down_Grp2 <- avg_density_wide %>% filter(log2_FC_Grp3_vs_Grp2 < -1 & p_Grp3_vs_Grp2 < 0.05)
 
 
 
@@ -257,17 +253,17 @@ sig_down_Sm <- avg_density_wide %>% filter(log2_FC_COPD_vs_Sm < -1 & p_COPD_vs_S
 
 
 ```{r write the. results}
-print(COPD_vs_NS)
-write.csv(COPD_vs_NS, "/path_to_folder/Sig_DEGs_copd_v_ns.csv")
+print(Grp3_vs_Grp1)
+write.csv(Grp3_vs_Grp1, "/path_to_folder/Sig_DEGs_grp3_v_grp1.csv")
 
-print(COPD_vs_Sm)
-write.csv(COPD_vs_Sm, "/path_to_folder/Sig_DEGs_copd_v_sm.csv")
+print(Grp3_vs_Grp2)
+write.csv(Grp3_vs_Grp2, "/path_to_folder/Sig_DEGs_grp3_v_grp2.csv")
 
-print(sig_up_NS)
-write.csv(sig_up_NS, "/path_to_folder/Sig_DEGs_copd_v_ns_pvalue.csv")
+print(sig_up_Grp1)
+write.csv(sig_up_Grp1, "/path_to_folder/Sig_DEGs_grp3_v_grp1_pvalue.csv")
 
-print(sig_up_Sm)
-write.csv(sig_down_Sm, "/path_to_folder/Sig_DEGs_copd_v_sm_pvalue.csv")
+print(sig_up_Grp2)
+write.csv(sig_down_grp2, "/path_to_folder/Sig_DEGs_grp3_v_grp2_pvalue.csv")
 
 ```
 
