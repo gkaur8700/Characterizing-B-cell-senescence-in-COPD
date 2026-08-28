@@ -6,15 +6,15 @@ library(dplyr)
 library(ggplot2)
 
 #Load the samples
-ns1 <- Load10X_Spatial(data.dir = "/...path_to_folder/Sample_1_346/outs", slice = "ns1")
-ns2 <- Load10X_Spatial(data.dir = "/...path_to_folder/Sample_1_350/outs", slice = "ns2")
-ns3 <- Load10X_Spatial(data.dir = "/...path_to_folder/Sample_2_350/outs", slice = "ns3")
+ns1 <- Load10X_Spatial(data.dir = "/...path_to_folder/Sample_1/outs", slice = "ns1")
+ns2 <- Load10X_Spatial(data.dir = "/...path_to_folder/Sample_2/outs", slice = "ns2")
+ns3 <- Load10X_Spatial(data.dir = "/...path_to_folder/Sample_3/outs", slice = "ns3")
 
-sm1 <- Load10X_Spatial(data.dir = "/...path_to_folder/Sample_2_346/outs", slice = "sm1")
+sm1 <- Load10X_Spatial(data.dir = "/...path_to_folder/Sample_4/outs", slice = "sm1")
 
-c1 <- Load10X_Spatial(data.dir = "/...path_to_folder/Sample_3_346/outs", slice = "c1")
-c2 <- Load10X_Spatial(data.dir = "/...path_to_folder/Sample_3_350/outs", slice = "c2")
-c3 <- Load10X_Spatial(data.dir = "/...path_to_folder/Sample_4_350/outs", slice = "c3")
+c1 <- Load10X_Spatial(data.dir = "/...path_to_folder/Sample_5/outs", slice = "c1")
+c2 <- Load10X_Spatial(data.dir = "/...path_to_folder/Sample_6/outs", slice = "c2")
+c3 <- Load10X_Spatial(data.dir = "/...path_to_folder/Sample_7/outs", slice = "c3")
 
 #Data Preprocessing
 
@@ -92,27 +92,4 @@ saveRDS(markers, file = "/path_to_folder/cluster_markersrds")
 
 #read the rds
 data <- readRDS("path_to_folder/All_merged_after_integration.rds")
-
-#rename the clusters
-#based on the markers from scRNA seq
-
-new_cluster_names <- c(
-  "0" = "Endothelial Cells",
-  "1" = "Monocytes",
-  "2" = "B cells",
-  "3" = "Smooth Muscle Cells",
-  "4" = "Alveolar Macrophages",
-  "5" = "Foam cells",
-  "6" = "Reticulocyte",
-  "7" = "Ciliated Epithelial Cells",
-  "8" = "Transtional-AT2 cells",
-  "9" = "AT2"
-)
-
-data <- RenameIdents(data, new_cluster_names)
-
-Idents(data)
-
-saveRDS(data, "/path_to_folder/All_merged_after_integration_annotated.rds")
-
 ```
