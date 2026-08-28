@@ -24,10 +24,10 @@ library(tidyverse)
 annotated_data <- readRDS("/path_to_folder/HarmonyIntegrated_annotated_data_final.rds")
 
 # Subset for NS and COPD
-subset_obj <- subset(annotated_data, subset = orig.ident %in% c("nonsmoker", "COPD"))
+subset_obj <- subset(annotated_data, subset = orig.ident %in% c("Grp1", "Grp3"))
 
 # Subset for Sm and COPD
-subset_obj_1 <- subset(annotated_data, subset = orig.ident %in% c("smoker", "COPD"))
+subset_obj_1 <- subset(annotated_data, subset = orig.ident %in% c("Grp2", "Grp3"))
 
 ```
 
@@ -36,14 +36,14 @@ subset_obj_1 <- subset(annotated_data, subset = orig.ident %in% c("smoker", "COP
 You can also embed plots, for example:
 
 ```{r plots, echo=TRUE}
-#COPS vs NS
+#Grp3 vs Grp1
 
 DimPlot(subset_obj, reduction = "umap", group.by = "orig.ident")
 subset1 <- DimPlot(subset_obj, reduction = "umap", group.by = "orig.ident", cols = c("#F8766D", "#89CFF0"), pt.size = 0.001)
 
 print(subset1)
 
-#COPD vs Sm
+#Grp3 vs Grp2
 subset2 <- DimPlot(subset_obj_1, reduction = "umap", group.by = "orig.ident", cols = c("#F8766D", "#b0b0b04D"), pt.size = 0.001)
 
 print(subset2)
