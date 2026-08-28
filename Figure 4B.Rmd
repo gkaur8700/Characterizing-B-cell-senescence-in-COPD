@@ -24,8 +24,8 @@ data <- readRDS("/path_to_folder/HarmonyIntegrated_annotated_data_final.rds")
 
 data$CellTypes <- Idents(data)
 
-#Subset B cell cluster
-bcell <- subset(data, idents = c("B cells"))
+#Subset sellect cell cluster cluster
+select_cell <- subset(data, idents = c("Select_Cell_type"))
 
 ```
 
@@ -34,7 +34,7 @@ bcell <- subset(data, idents = c("B cells"))
 
 ```{r senescence-associated geneset }
 # Read the identified senescence associated geneset
-genes <- read.csv("/path_to_folder/B cell senescence_genes.csv")
+genes <- read.csv("/path_to_folder/select_cell_senescence_genes.csv")
 
 # Read the column called "gene"
 gene_list <- genes$gene
@@ -46,7 +46,7 @@ gene_list <- genes$gene
 
 # Get normalized data
 expr <- GetAssayData(
-  bcell,
+  select_cell,
   assay = "RNA",
   layer = "data"
 )
@@ -55,7 +55,7 @@ expr <- GetAssayData(
 genes <- intersect(gene_list, rownames(expr))
 
 # Metadata
-meta <- bcell@meta.data
+meta <- select_cell@meta.data
 
 meta$group <- paste(
   meta$CellTypes,
@@ -99,56 +99,56 @@ final_table <- final_table[, c(
 head(final_table)
 
 #Write the final table
-write.csv(final_table, "/path_to_folder/Figure 4B/bcell_senescence_gene_expression.csv",
+write.csv(final_table, "/path_to_folder/Figure 4B/select_cell_senescence_gene_expression.csv",
           row.names = FALSE)
 ```
 
 ```{r add the group column}
 
 final_table$group <- case_when(
-  grepl("^NS", final_table$sample) ~ "NS",
-  grepl("^Sm", final_table$sample) ~ "Sm",
-  grepl("^C",  final_table$sample) ~ "C",
+  grepl("^Grp1", final_table$sample) ~ "Grp1",
+  grepl("^Grp2", final_table$sample) ~ "Grp2",
+  grepl("^Grp3",  final_table$sample) ~ "Grp3",
   TRUE ~ "Other"
 )
 
 
 write.csv(
   final_table,
-  "/path_to_folder/Figure 4B/Bcell_sample_expression_grouped.csv",
+  "/path_to_folder/Figure 4B/select_cell_sample_expression_grouped.csv",
   row.names = FALSE
 )
 
 ```
 
-```{r identify log2FC between COPD vs NS}
+```{r identify log2FC between Grp3 vs Grp1}
 
 #Subset the results
 
-ns <- subset(final_table, group == "NS")
-copd <- subset(final_table, group == "C")
-sm <- subset(final_table, group == "Sm")
+Grp1 <- subset(final_table, group == "Grp1")
+Grp3 <- subset(final_table, group == "Grp3")
+Grp2 <- subset(final_table, group == "Grp2")
 
 gene_cols <- setdiff(colnames(final_table), c("cluster","sample","group"))
 
-ns_mean   <- colMeans(ns[, gene_cols])
-copd_mean <- colMeans(copd[, gene_cols])
+Grp1_mean   <- colMeans(Grp1[, gene_cols])
+Grp3_mean <- colMeans(Grp3[, gene_cols])
 
-#Calculate log2 FC- COPD vs NS
-log2FC <- log2(copd_mean + 1e-6) -
-          log2(ns_mean + 1e-6)
+#Calculate log2 FC- Grp3 vs Grp1
+log2FC <- log2(Grp3_mean + 1e-6) -
+          log2(Grp1_mean + 1e-6)
 
 #Wilcoxan test
 genes <- colnames(final_table)[4:ncol(final_table)]
-data_sub <- subset(final_table, group %in% c("NS", "C"))
+data_sub <- subset(final_table, group %in% c("Grp1", "Grp3"))
 
 genes <- setdiff(colnames(final_table), c("cluster","sample","group"))
 
 pvals <- sapply(genes, function(gene) {
 
   wilcox.test(
-    data_sub[[gene]][data_sub$group == "C"],
-    data_sub[[gene]][data_sub$group == "NS"], 
+    data_sub[[gene]][data_sub$group == "Grp3"],
+    data_sub[[gene]][data_sub$group == "Grp1"], 
     exact = FALSE
   )$p.value
 
@@ -180,11 +180,11 @@ down_genes <- downregulated$gene
 
 head(downregulated)
 
-write.csv(results, "/path_to_folder/Figure 4B/B_cell_senescence_fold_change_scRNA_results.csv")
+write.csv(results, "/path_to_folder/Figure 4B/select_cell_senescence_fold_change_scRNA_results.csv")
 
-write.csv(upregulated, "/path_to_folder/Figure 4B/upregulated_genes_Bcells_copd_vs_ns_Sen.csv", row.names = FALSE)
+write.csv(upregulated, "/path_to_folder/Figure 4B/upregulated_genes_select_cells_grp3_vs_grp1_Sen.csv", row.names = FALSE)
 
-write.csv(downregulated, "/path_to_folder/Figure 4B/downregulated_genes_Bcells_copd_vs_ns_Sen.csv", row.names = FALSE)
+write.csv(downregulated, "/path_to_folder/Figure 4B/downregulated_genes_select_cells_grp3_vs_grp1_Sen.csv", row.names = FALSE)
 
 ```
 
@@ -206,11 +206,11 @@ z_up_df <- t(z_up_df)
 z_down_df <- t(z_down_df)
 
 
-Sig_Sen_genes_B_cells <- rbind(z_up_df, z_down_df)
+Sig_Sen_genes_select_cells <- rbind(z_up_df, z_down_df)
 
-head(Sig_Sen_genes_B_cells)
+head(Sig_Sen_genes_select_cells)
 
-write.csv(Sig_Sen_genes_B_cells, "/path_to_folder/Figure 4B/Zscore_sig_DEGs_Bcells_Sen_20260225.csv", row.names = TRUE)
+write.csv(Sig_Sen_genes_select_cells, "/path_to_folder/Figure 4B/Zscore_sig_DEGs_select_cells_Sen.csv", row.names = TRUE)
 
 ```
 
