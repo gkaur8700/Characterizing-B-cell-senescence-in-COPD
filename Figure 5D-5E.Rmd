@@ -11,7 +11,7 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r B cell senescence}
+```{r select cell senescence}
 library(Seurat)
 library(dplyr)
 library(ggplot2)
@@ -29,7 +29,7 @@ select_cell_obj <- subset(data, idents = "select cells")
 ## select cell senescence score
 
 ```{r BSM}
-#get the B cell associated senescence geneset from scRNA seq analyses as identified in Figure 4B
+#get the select cell associated senescence geneset from scRNA seq analyses 
 
 sen_gene <- read.csv("/path_to_folder/Sig_select_cell_ senescence_genes.csv") 
 # this geneset has all the genes included after the gsea analyses and were linked to select cell senescence
