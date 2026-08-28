@@ -26,19 +26,19 @@ library(dplyr)
 ```{r Load genelist for upregulated}
 gene_list <- c("list of genes identified")
 
-gene_ns_up <- bitr(gene_list,
+gene_up <- bitr(gene_list,
                 fromType = "SYMBOL",
                 toType = "ENTREZID",
                 OrgDb = org.Hs.eg.db)
 
-gene_ns_up
+gene_up
 ```
 
 
 ```{r GO enrichment}
 #GO Enrichment
 ego <- enrichGO(
-  gene          = gene_ns_up$ENTREZID,
+  gene          = gene_up$ENTREZID,
   OrgDb         = org.Hs.eg.db,
   ont           = "BP",
   pAdjustMethod = "BH",
@@ -60,7 +60,7 @@ write.csv(ego_df, "/path_to_folder/sheet_name.csv", row.names = FALSE)
 
 ```{r KEGG analyses}
 ekegg <- enrichKEGG(
-  gene         = gene_ns_up$ENTREZID,
+  gene         = gene_up$ENTREZID,
   organism     = "hsa",
   pvalueCutoff = 0.05
 )
@@ -74,18 +74,18 @@ write.csv(ekegg_df, "/path_to_folder/sheet_name.csv", row.names = FALSE)
 ```{r Load genelist downregulated genes}
 down_list <- c("list of genes identified")
 
-gene_ns_down <- bitr(down_list,
+gene_down <- bitr(down_list,
                 fromType = "SYMBOL",
                 toType = "ENTREZID",
                 OrgDb = org.Hs.eg.db)
 
-gene_ns_down
+gene_down
 ```
 
-```{r GO enrichment_COPD_vs_NS-down}
+```{r GO enrichment}
 #GO Enrichment
 ego1 <- enrichGO(
-  gene          = gene_ns_down$ENTREZID,
+  gene          = gene_down$ENTREZID,
   OrgDb         = org.Hs.eg.db,
   ont           = "BP",
   pAdjustMethod = "BH",
@@ -105,9 +105,9 @@ write.csv(ego_df1, "/path_to_folder/sheet_name.csv", row.names = FALSE)
 
 ```
 
-```{r KEGG analyses_COPD_vs_NS_down}
+```{r KEGG analyses}
 ekegg1 <- enrichKEGG(
-  gene         = gene_ns_down$ENTREZID,
+  gene         = gene_down$ENTREZID,
   organism     = "hsa",
   pvalueCutoff = 0.05
 )
