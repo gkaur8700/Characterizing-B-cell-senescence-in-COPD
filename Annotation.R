@@ -44,18 +44,11 @@ write_xlsx(lungquery, "path_to_folder/Marker_annotations.xlsx")
 
 #Found clusters to remove based upon the cluster frequency information.
 #These clusters have readings for 1-3 samples 
-clusters_to_remove <- c("Fibromyocytes", "Tuft", "Goblet (nasal)", "SMG duct", "SMG serous (bronchial)", "Migratory DCs", "AT2 proliferating", "Multiciliated (nasal)")
+clusters_to_remove <- c("removed cluster names with cell frequencies in only 1-3 replicated within the group")
 
 #Cannot remove the alveolar M(phi) CCL3+ cell cluster
 #Removed these cells
 sobj_subset <- subset(x = annotated_data, idents = clusters_to_remove, invert = TRUE)
-
-#Requires more tweaking
-#Removing myofibroblasts, subrabasal cells and T-cell proliferating as they are over-represented in only one sample and could be an artifact
-
-clusters_to_remove_1 <- c("Suprabasal", "T cells proliferating", "Myofibroblasts")
-
-sobj_subset <- subset(x = sobj_subset, idents = clusters_to_remove_1, invert = TRUE)
 
 # Find Variable features after renaming
 sobj_subset <- FindVariableFeatures(sobj_subset, selection.method = "vst", nfeatures = 3000)
@@ -69,7 +62,6 @@ All.markers %>%
 write_xlsx(All.markers, "path_to_folder/Final_Marker_annotation.xlsx")
 
 #Calculate the cell cluster frequency again
-#This should be final
 
 clusters_freq_2 <- sobj_subset@meta.data %>%
   group_by(sample, predicted.ann_finest_level) %>%
