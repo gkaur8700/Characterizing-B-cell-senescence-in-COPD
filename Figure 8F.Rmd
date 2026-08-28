@@ -17,8 +17,7 @@ library(clusterProfiler)
 You can also embed plots, for example:
 
 ```{r read the files}
-at <- read.csv("/path_to_folder/copd_vs_ns_at2_sig.csv")
-mnn <- read.csv("/path_to_folder/copd_vs_ns_mnn_sig.csv")
+mnn <- read.csv("/path_to_folder/grp3_vs_grp1_mnn_sig.csv")
 
 ```
 
@@ -36,47 +35,7 @@ Ensemble <- useEnsembl(biomart="genes", dataset = "hsapiens_gene_ensembl")
 
 ```
 
-```{r up- and downregulated AT2 cells}
-
-#upregulated
-at.top <- at[at$log2FoldChange > 0.5,]
-at.top <- at.top[order(at.top$log2FoldChange, decreasing = TRUE),]
-
-Ensemble_ID_at <- getBM(mart = Ensemble, attributes = c('external_gene_name', 'ensembl_gene_id'), 
-                        filters = "external_gene_name",
-                        values = at.top$X
-)
-
-col1 <- Ensemble_ID_at$ensembl_gene_id
-GO_results1 <- enrichGO(gene = col1, OrgDb = "org.Hs.eg.db", keyType = "ENSEMBL", ont = "BP")
-
-edox1 <- setReadable(GO_results1, 'org.Hs.eg.db', 'ENSEMBL')
-head(edox1)
-fit1 <- plot(barplot(edox1, showCategory =10))
-write.csv(edox1, file = "/Users/gagandeepkaur/Desktop/copd_vs_ns_AT2_up_GOanalyses.csv")
-
-#Downregulated
-at.down <- at[at$log2FoldChange < -0.5,]
-at.down <- at.down[order(at.down$log2FoldChange, decreasing = FALSE),]
-
-Ensemble_ID_at_down <- getBM(mart = Ensemble, attributes = c('external_gene_name', 'ensembl_gene_id'), 
-                             filters = "external_gene_name",
-                             values = at.down$X
-)
-
-col2 <- Ensemble_ID_at_down$ensembl_gene_id
-
-GO_results2 <- enrichGO(gene = col2, OrgDb = "org.Hs.eg.db", keyType = "ENSEMBL", ont = "BP")
-
-edox2 <- setReadable(GO_results2, 'org.Hs.eg.db', 'ENSEMBL')
-head(edox2)
-fit2 <- plot(barplot(edox2, showCategory =10))
-write.csv(edox2, file = "/path_to_folder/copd_vs_ns_AT2_down_GOanalyses.csv")
-
-```
-
-
-```{r up- and downregulated genes in MNN}
+```{r up- and downregulated genes in select cell cluster}
 #upregulated
 mnn.top <- mnn[mnn$log2FoldChange > 0.5,]
 mnn.top <- mnn.top[order(mnn.top$log2FoldChange, decreasing = TRUE),]
