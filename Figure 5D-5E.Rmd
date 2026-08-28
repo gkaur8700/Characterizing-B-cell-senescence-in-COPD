@@ -20,29 +20,29 @@ library(tidyverse)
 #read the rds
 data <- readRDS("/path_to_folder/All_merged_after_integration_annotated.rds")
 
-#subset the spatial seurat object to only identify the B cell population
+#subset the spatial seurat object to only identify the select cell population
 
-bcell_obj <- subset(data, idents = "B cells")
+select_cell_obj <- subset(data, idents = "select cells")
 
 ```
 
-## B cell senescence score
+## select cell senescence score
 
 ```{r BSM}
 #get the B cell associated senescence geneset from scRNA seq analyses as identified in Figure 4B
 
-sen_gene <- read.csv("/path_to_folder/Sig_Bcell_ senescence_genes.csv") 
-# this geneset has all the genes included after the gsea analyses and were linked to B cell senescence
+sen_gene <- read.csv("/path_to_folder/Sig_select_cell_ senescence_genes.csv") 
+# this geneset has all the genes included after the gsea analyses and were linked to select cell senescence
 
 sc_sig <- sen_gene$Genes
 
 #score the signature in Visium
 
-bcell_obj <- AddModuleScore(bcell_obj, features = list(sc_sig), name = "Sen_signature")
+select_cell_obj <- AddModuleScore(select_cell_obj, features = list(sc_sig), name = "Sen_signature")
 
 #get a mean and median score for the senescnece signature across all the samples
 df <- as.data.frame(
-  bcell_obj@meta.data[, c("sample", "Sen_signature1")]
+  select_cell_obj@meta.data[, c("sample", "Sen_signature1")]
 )
 
 sample_summary <- df %>%
@@ -54,7 +54,7 @@ sample_summary <- df %>%
 
 sample_summary
 
-write.csv(sample_summary, "/path_to_folder/Sen_Score_Bcell.csv")
+write.csv(sample_summary, "/path_to_folder/Sen_Score_select_cell.csv")
 
 ```
 
@@ -65,7 +65,7 @@ write.csv(sample_summary, "/path_to_folder/Sen_Score_Bcell.csv")
 #lets plot the unique plots for with senescnece score
 
 #Plot the spatial plots
-all_scores <- bcell_obj$Sen_signature1
+all_scores <- select_cell_obj$Sen_signature1
 
 # 5th and 95th percentile for contrast
 min_cut <- quantile(all_scores, 0.05, na.rm = TRUE)
@@ -77,21 +77,21 @@ threshold <- quantile(all_scores, 0.5, na.rm = TRUE)
 # ----------------------------
 # Step 2: Create highlight column
 # ----------------------------
-bcell_obj$Sen_highlight <- ifelse(
-  bcell_obj$Sen_signature1 >= threshold,
-  bcell_obj$Sen_signature1,
+select_cell_obj$Sen_highlight <- ifelse(
+  select_cell_obj$Sen_signature1 >= threshold,
+  select_cell_obj$Sen_signature1,
   NA
 )
 
 # ----------------------------
 # Step 3: Loop over samples and generate plots
 # ----------------------------
-plots <- lapply(unique(bcell_obj$sample), function(s) {
+plots <- lapply(unique(select_cell_obj$sample), function(s) {
   
-  bcell_sample <- subset(bcell_obj, subset = sample == s)
+  select_cell_sample <- subset(select_cell_obj, subset = sample == s)
   
   SpatialFeaturePlot(
-    bcell_sample,
+    select_cell_sample,
     features = "Sen_highlight",
     min.cutoff = min_cut,
     max.cutoff = max_cut
@@ -107,7 +107,7 @@ plots <- lapply(unique(bcell_obj$sample), function(s) {
     )
 })
 
-names(plots) <- unique(bcell_obj$sample)
+names(plots) <- unique(select_cell_obj$sample)
 
 plots
 
@@ -115,7 +115,7 @@ plots
 for (s in names(plots)) {
   
   ggsave(
-    filename = paste0("/path_to_folder/Figure 5D-E/Senescence_Bcell_", s, ".png"),
+    filename = paste0("/path_to_folder/Senescence_select_cell_", s, ".png"),
     plot = plots[[s]],
     width = 6,
     height = 6,
